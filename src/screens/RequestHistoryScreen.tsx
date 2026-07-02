@@ -19,29 +19,33 @@ import {
   Alert,
   StatusBar,
   Dimensions,
+  Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { emergencyService, EmergencyRequest } from '../services/emergencyService';
-import { colors, spacing, borderRadius, fontSizes, fontWeights, shadows } from '../styles/theme';
 
-const { height } = Dimensions.get('window');
+const LOGO = require('../../assets/logo.png');
+const { height, width } = Dimensions.get('window');
+const isSmallDevice = height < 700;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<string, { icon: string; color: string }> = {
-  medical:  { icon: '🚑', color: colors.danger },
-  fire:     { icon: '🔥', color: colors.fire },
-  police:   { icon: '👮', color: colors.police },
-  accident: { icon: '🚗', color: colors.accident },
-  other:    { icon: '📞', color: colors.textSecondary },
+  medical:  { icon: '🚑', color: '#DC2626' },
+  fire:     { icon: '🔥', color: '#F97316' },
+  police:   { icon: '👮', color: '#3B82F6' },
+  accident: { icon: '🚗', color: '#7C3AED' },
+  other:    { icon: '📞', color: '#6B7280' },
 };
 
 const STATUS_META: Record<string, { icon: string; color: string; bgColor: string }> = {
-  pending:    { icon: '⏳', color: '#D97706', bgColor: colors.warningBg },
-  dispatched: { icon: '🚀', color: colors.primary, bgColor: colors.primaryBg },
-  resolved:   { icon: '✅', color: colors.success, bgColor: colors.successBg },
-  cancelled:  { icon: '❌', color: colors.danger,  bgColor: colors.dangerBg },
+  pending:    { icon: '⏳', color: '#D97706', bgColor: '#FEF3C7' },
+  dispatched: { icon: '🚀', color: '#DC2626', bgColor: '#FEF2F2' },
+  resolved:   { icon: '✅', color: '#10B981', bgColor: '#D1FAE5' },
+  cancelled:  { icon: '❌', color: '#EF4444', bgColor: '#FEE2E2' },
 };
 
 const formatRelative = (iso: string) => {
@@ -85,7 +89,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
           const id = user.id || 'user-1';
           const name = user.name || 'User';
           setUserId(id);
-          // Seed mock data so the list is not empty on first launch
           await emergencyService.seedMockHistory(id, name);
           await fetchHistory(id);
         }
@@ -176,7 +179,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
         onPress={() => { setSelectedItem(item); setModalVisible(true); }}
         activeOpacity={0.75}
       >
-        {/* Card header */}
         <View style={styles.cardHeader}>
           <View style={styles.typeChip}>
             <Text style={styles.typeChipIcon}>{typeMeta.icon}</Text>
@@ -191,18 +193,15 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* Location + time */}
         <View style={styles.cardMeta}>
           <Text style={styles.metaText}>📍 {item.location.label}</Text>
           <Text style={styles.metaTime}>🕐 {formatRelative(item.createdAt)}</Text>
         </View>
 
-        {/* Notes preview */}
         {item.notes ? (
           <Text style={styles.notesPreview} numberOfLines={1}>📝 {item.notes}</Text>
         ) : null}
 
-        {/* Footer */}
         <View style={styles.cardFooter}>
           <Text style={styles.requestId}>#{item.id.slice(0, 12).toUpperCase()}</Text>
           <Text style={styles.viewMore}>View Details →</Text>
@@ -228,12 +227,17 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={[styles.emptyAction, { backgroundColor: colors.danger }]}
+          style={styles.emptyActionSOS}
           onPress={() => navigation.navigate('SOS')}
         >
-          <Text style={[styles.emptyActionText, { color: colors.textWhite }]}>
-            🆘 Send SOS Alert
-          </Text>
+          <LinearGradient
+            colors={['#DC2626', '#B91C1C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.emptyActionGradient}
+          >
+            <Text style={styles.emptyActionSOSText}>🆘 Send SOS Alert</Text>
+          </LinearGradient>
         </TouchableOpacity>
       )}
     </View>
@@ -242,19 +246,31 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.card} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>📋 Request History</Text>
-        <TouchableOpacity onPress={() => userId && fetchHistory(userId)} style={styles.refreshBtn}>
-          <Text style={styles.refreshBtnText}>↻</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Full Width Red Header with Logo - Same as HomeScreen */}
+      <LinearGradient
+        colors={['#DC2626', '#991B1B']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fullHeader, { paddingTop: insets.top + 8 }]}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+
+          <View style={styles.headerCenter}>
+            <Image source={LOGO} style={styles.headerLogo} resizeMode="contain" />
+            <Text style={styles.headerTitle}>Request History</Text>
+          </View>
+
+          <TouchableOpacity onPress={() => userId && fetchHistory(userId)} style={styles.refreshButton}>
+            <Text style={styles.refreshText}>↻</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Search bar */}
       <View style={styles.searchRow}>
@@ -262,7 +278,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search by type, location, or notes..."
-          placeholderTextColor={colors.textPlaceholder}
+          placeholderTextColor="#9CA3AF"
           value={searchQuery}
           onChangeText={handleSearch}
         />
@@ -302,7 +318,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
       {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color="#DC2626" />
           <Text style={styles.loadingText}>Loading history...</Text>
         </View>
       ) : (
@@ -337,7 +353,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
               const statusMeta = STATUS_META[selectedItem.status]      || STATUS_META.pending;
               return (
                 <>
-                  {/* Modal header */}
                   <View style={styles.modalHeader}>
                     <View style={styles.modalTitleRow}>
                       <Text style={styles.modalTypeIcon}>{typeMeta.icon}</Text>
@@ -351,7 +366,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
                   </View>
 
                   <ScrollView showsVerticalScrollIndicator={false}>
-                    {/* Status row */}
                     <View style={styles.modalStatusRow}>
                       <View style={[styles.statusChip, { backgroundColor: statusMeta.bgColor }]}>
                         <Text style={[styles.statusChipText, { color: statusMeta.color }]}>
@@ -361,7 +375,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
                       <Text style={styles.modalId}>#{selectedItem.id.slice(0, 12).toUpperCase()}</Text>
                     </View>
 
-                    {/* Detail rows */}
                     {[
                       { icon: '📍', label: 'Location',    value: selectedItem.location.label },
                       { icon: '🧭', label: 'Coordinates', value: `${selectedItem.location.latitude}, ${selectedItem.location.longitude}` },
@@ -379,7 +392,6 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
                       </View>
                     ))}
 
-                    {/* Actions */}
                     <View style={styles.modalActions}>
                       <TouchableOpacity
                         style={styles.trackingBtn}
@@ -414,145 +426,394 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 // ── styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F5F5F5' 
+  },
 
-  header: {
+  // Full Width Red Header - Same as HomeScreen
+  fullHeader: {
+    paddingBottom: 16,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    ...shadows.sm,
+    paddingHorizontal: 16,
   },
-  backBtn: { padding: spacing.xs },
-  backBtnText: { fontSize: fontSizes.md, color: colors.primary, fontWeight: fontWeights.medium },
-  headerTitle: { fontSize: fontSizes.xl, fontWeight: fontWeights.bold, color: colors.textHeading },
-  refreshBtn: { padding: spacing.xs },
-  refreshBtnText: { fontSize: 20, color: colors.primary },
+  backButton: { 
+    padding: 4,
+  },
+  backText: { 
+    fontSize: 15, 
+    color: '#FFFFFF', 
+    fontWeight: '500' 
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
+    marginRight: 8,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF',
+  },
+  headerTitle: { 
+    fontSize: isSmallDevice ? 15 : 17, 
+    fontWeight: '700', 
+    color: '#FFFFFF' 
+  },
+  refreshButton: { 
+    padding: 4 
+  },
+  refreshText: { 
+    fontSize: 20, 
+    color: '#FFFFFF' 
+  },
 
+  // Search
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    margin: spacing.lg,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
+    backgroundColor: '#FFFFFF',
+    margin: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  searchIcon: { fontSize: 16, marginRight: spacing.sm },
-  searchInput: { flex: 1, paddingVertical: spacing.md, fontSize: fontSizes.md, color: colors.textPrimary },
-  searchClear: { fontSize: 16, color: colors.textMuted, padding: spacing.xs },
+  searchIcon: { 
+    fontSize: 16, 
+    marginRight: 8 
+  },
+  searchInput: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    fontSize: 14, 
+    color: '#1F2937' 
+  },
+  searchClear: { 
+    fontSize: 16, 
+    color: '#9CA3AF', 
+    padding: 4 
+  },
 
-  filterScroll: { maxHeight: 44 },
-  filterContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  // Filter
+  filterScroll: { 
+    maxHeight: 44 
+  },
+  filterContent: { 
+    paddingHorizontal: 16, 
+    paddingBottom: 8 
+  },
   filterTab: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.borderLight,
-    marginRight: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    marginRight: 8,
   },
-  filterTabActive: { backgroundColor: colors.primary },
-  filterTabText: { fontSize: fontSizes.sm, color: colors.textSecondary, fontWeight: fontWeights.medium },
-  filterTabTextActive: { color: colors.textWhite },
+  filterTabActive: { 
+    backgroundColor: '#DC2626' 
+  },
+  filterTabText: { 
+    fontSize: 12, 
+    color: '#6B7280', 
+    fontWeight: '500' 
+  },
+  filterTabTextActive: { 
+    color: '#FFFFFF' 
+  },
 
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: spacing.md, fontSize: fontSizes.md, color: colors.textSecondary },
+  // Loading
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  loadingText: { 
+    marginTop: 12, 
+    fontSize: 14, 
+    color: '#6B7280' 
+  },
 
-  listContent: { padding: spacing.lg },
-  listEmpty: { flexGrow: 1 },
+  // List
+  listContent: { 
+    padding: 16 
+  },
+  listEmpty: { 
+    flexGrow: 1 
+  },
 
+  // Card
   card: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    ...shadows.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  typeChip: { flexDirection: 'row', alignItems: 'center' },
-  typeChipIcon: { fontSize: 16, marginRight: spacing.xs },
-  typeChipText: { fontSize: fontSizes.sm, fontWeight: fontWeights.bold },
-  statusChip: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.sm },
-  statusChipText: { fontSize: fontSizes.xs, fontWeight: fontWeights.semibold },
-  cardMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
-  metaText: { fontSize: fontSizes.sm, color: colors.textSecondary },
-  metaTime: { fontSize: fontSizes.xs, color: colors.textMuted },
-  notesPreview: { fontSize: fontSizes.sm, color: colors.textSecondary, marginBottom: spacing.sm, fontStyle: 'italic' },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs },
-  requestId: { fontSize: fontSizes.xs, color: colors.textMuted },
-  viewMore: { fontSize: fontSizes.sm, color: colors.primary, fontWeight: fontWeights.medium },
+  cardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  typeChip: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  typeChipIcon: { 
+    fontSize: 16, 
+    marginRight: 6 
+  },
+  typeChipText: { 
+    fontSize: 14, 
+    fontWeight: '700' 
+  },
+  statusChip: { 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 12 
+  },
+  statusChipText: { 
+    fontSize: 10, 
+    fontWeight: '600' 
+  },
+  cardMeta: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 4 
+  },
+  metaText: { 
+    fontSize: 13, 
+    color: '#6B7280' 
+  },
+  metaTime: { 
+    fontSize: 12, 
+    color: '#9CA3AF' 
+  },
+  notesPreview: { 
+    fontSize: 12, 
+    color: '#6B7280', 
+    marginBottom: 8, 
+    fontStyle: 'italic' 
+  },
+  cardFooter: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginTop: 4 
+  },
+  requestId: { 
+    fontSize: 10, 
+    color: '#9CA3AF' 
+  },
+  viewMore: { 
+    fontSize: 12, 
+    color: '#DC2626', 
+    fontWeight: '600' 
+  },
 
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxxl },
-  emptyEmoji: { fontSize: 64, marginBottom: spacing.lg },
-  emptyTitle: { fontSize: fontSizes.xxl, fontWeight: fontWeights.bold, color: colors.textHeading, marginBottom: spacing.sm },
-  emptySubtitle: { fontSize: fontSizes.md, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
-  emptyAction: {
-    backgroundColor: colors.borderLight,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
+  // Empty
+  emptyContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 32 
   },
-  emptyActionText: { fontSize: fontSizes.md, fontWeight: fontWeights.semibold, color: colors.textPrimary },
+  emptyEmoji: { 
+    fontSize: 64, 
+    marginBottom: 16 
+  },
+  emptyTitle: { 
+    fontSize: 22, 
+    fontWeight: '700', 
+    color: '#1F2937', 
+    marginBottom: 4 
+  },
+  emptySubtitle: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    textAlign: 'center', 
+    marginBottom: 16 
+  },
+  emptyAction: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  emptyActionText: { 
+    fontSize: 14, 
+    fontWeight: '500', 
+    color: '#6B7280' 
+  },
+  emptyActionSOS: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  emptyActionGradient: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  emptyActionSOSText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#FFFFFF' 
+  },
 
   // Modal
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
-  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    padding: spacing.xl,
-    paddingBottom: spacing.xxxl,
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'flex-end' 
   },
-  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.lg },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  modalTitleRow: { flexDirection: 'row', alignItems: 'center' },
-  modalTypeIcon: { fontSize: 24, marginRight: spacing.sm },
-  modalTitle: { fontSize: fontSizes.xl, fontWeight: fontWeights.bold, color: colors.textHeading },
-  modalClose: { fontSize: 20, color: colors.textSecondary, padding: spacing.xs },
-  modalStatusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  modalId: { fontSize: fontSizes.xs, color: colors.textMuted },
-  modalDetailRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.lg },
-  modalDetailIcon: { fontSize: 18, marginRight: spacing.md, marginTop: 2 },
-  modalDetailBody: { flex: 1 },
-  modalDetailLabel: { fontSize: fontSizes.xs, fontWeight: fontWeights.semibold, color: colors.textMuted, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-  modalDetailValue: { fontSize: fontSizes.md, color: colors.textPrimary },
-  modalActions: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.lg },
+  modalBackdrop: { 
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor: 'rgba(0,0,0,0.45)' 
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  modalHandle: { 
+    width: 40, 
+    height: 4, 
+    backgroundColor: '#D1D5DB', 
+    borderRadius: 2, 
+    alignSelf: 'center', 
+    marginBottom: 16 
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  modalTitleRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  modalTypeIcon: { 
+    fontSize: 24, 
+    marginRight: 10 
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: '700', 
+    color: '#1F2937' 
+  },
+  modalClose: { 
+    fontSize: 20, 
+    color: '#6B7280', 
+    padding: 4 
+  },
+  modalStatusRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  modalId: { 
+    fontSize: 12, 
+    color: '#9CA3AF' 
+  },
+  modalDetailRow: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    marginBottom: 16 
+  },
+  modalDetailIcon: { 
+    fontSize: 18, 
+    marginRight: 12, 
+    marginTop: 2 
+  },
+  modalDetailBody: { 
+    flex: 1 
+  },
+  modalDetailLabel: { 
+    fontSize: 11, 
+    fontWeight: '600', 
+    color: '#9CA3AF', 
+    marginBottom: 2, 
+    textTransform: 'uppercase', 
+    letterSpacing: 0.5 
+  },
+  modalDetailValue: { 
+    fontSize: 15, 
+    color: '#1F2937' 
+  },
+  modalActions: { 
+    flexDirection: 'row', 
+    gap: 10, 
+    marginVertical: 16 
+  },
   trackingBtn: {
     flex: 1,
-    backgroundColor: colors.primaryBg,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DC2626',
   },
-  trackingBtnText: { fontSize: fontSizes.sm, fontWeight: fontWeights.semibold, color: colors.primary },
+  trackingBtnText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#DC2626' 
+  },
   cancelBtn: {
     flex: 1,
-    backgroundColor: colors.dangerBg,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EF4444',
   },
-  cancelBtnText: { fontSize: fontSizes.sm, fontWeight: fontWeights.semibold, color: colors.danger },
+  cancelBtnText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#EF4444' 
+  },
   modalCloseBtn: {
-    backgroundColor: colors.borderLight,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  modalCloseBtnText: { fontSize: fontSizes.md, fontWeight: fontWeights.medium, color: colors.textSecondary },
+  modalCloseBtnText: { 
+    fontSize: 15, 
+    fontWeight: '500', 
+    color: '#6B7280' 
+  },
 });
+
+export default RequestHistoryScreen;

@@ -15,16 +15,26 @@ import {
   Animated,
   Keyboard,
   TouchableWithoutFeedback,
+  Image,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { authService } from '../services/authService';
 
-export const RegisterScreen = ({ navigation }: any) => {
+// Logo from root assets
+const LOGO = require('../../assets/logo.png');
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 380;
+
+export const RegisterScreen = ({ route, navigation }: any) => {
+  // Get pre-filled email/password from Login screen
+  const { email: preFilledEmail, password: preFilledPassword } = route.params || {};
+
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(preFilledEmail || '');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(preFilledPassword || '');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +47,7 @@ export const RegisterScreen = ({ navigation }: any) => {
     confirmPassword: '',
   });
 
-  // Hardware Focus Refs for smoother keyboard traversal
+  // Focus Refs
   const emailInputRef = useRef<TextInput>(null);
   const phoneInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
@@ -45,13 +55,11 @@ export const RegisterScreen = ({ navigation }: any) => {
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
-  const [scaleAnim] = useState(new Animated.Value(0.95));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -107,7 +115,7 @@ export const RegisterScreen = ({ navigation }: any) => {
       if (response.success) {
         Alert.alert(
           '✅ Registration Successful',
-          'Your account has been successfully verified. Log in to access the emergency panel.',
+          'Your account has been created. Please login.',
           [
             {
               text: 'Sign In',
@@ -129,9 +137,15 @@ export const RegisterScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View style={styles.fullScreenContainer}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      
+      <LinearGradient
+        colors={['#FEF2F2', '#FEE2E2', '#FCA5A5']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
         <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -146,33 +160,50 @@ export const RegisterScreen = ({ navigation }: any) => {
                 styles.animatedContainer,
                 {
                   opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+                  transform: [{ translateY: slideAnim }],
                 },
               ]}
             >
-              {/* Emergency Matched Brand Header */}
+              {/* Back Button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.backIcon}>←</Text>
+                <Text style={styles.backText}>Back</Text>
+              </TouchableOpacity>
+
+              {/* Logo with Red Circle Background */}
               <View style={styles.headerContainer}>
-                <LinearGradient
-                  colors={['#DC2626', '#EF4444']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.iconContainer}
-                >
-                  <Text style={styles.iconText}>🚨</Text>
-                </LinearGradient>
+                <View style={styles.logoWrapper}>
+                  <LinearGradient
+                    colors={['#DC2626', '#991B1B']}
+                    style={styles.logoGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Image
+                      source={LOGO}
+                      style={styles.logo}
+                      resizeMode="contain"
+                    />
+                  </LinearGradient>
+                </View>
                 <Text style={styles.title}>Create Account</Text>
-                <Text style={styles.subtitle}>Join the active emergency assistance network</Text>
+                <View style={styles.subtitleContainer}>
+                  <View style={styles.subtitleLine} />
+                  <Text style={styles.subtitle}>Join the emergency response network</Text>
+                  <View style={styles.subtitleLine} />
+                </View>
               </View>
 
-              {/* Form Input Setup */}
-              <View style={styles.formContainer}>
+              {/* Form Card */}
+              <View style={styles.cardContainer}>
                 {/* Full Name */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Full Name</Text>
-                    {errors.name ? <Text style={styles.errorLabel}>⚠️ {errors.name}</Text> : null}
-                  </View>
-                  <View style={[styles.inputWrapper, errors.name ? styles.inputWrapperError : null]}>
+                  <Text style={styles.label}>Full Name</Text>
+                  <View style={[styles.inputWrapper, errors.name ? styles.inputError : null]}>
                     <Text style={styles.inputIcon}>👤</Text>
                     <TextInput
                       style={styles.input}
@@ -185,15 +216,13 @@ export const RegisterScreen = ({ navigation }: any) => {
                       blurOnSubmit={false}
                     />
                   </View>
+                  {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
                 </View>
 
-                {/* Email Address */}
+                {/* Email */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Email Address</Text>
-                    {errors.email ? <Text style={styles.errorLabel}>⚠️ {errors.email}</Text> : null}
-                  </View>
-                  <View style={[styles.inputWrapper, errors.email ? styles.inputWrapperError : null]}>
+                  <Text style={styles.label}>Email Address</Text>
+                  <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
                     <Text style={styles.inputIcon}>📧</Text>
                     <TextInput
                       ref={emailInputRef}
@@ -210,15 +239,13 @@ export const RegisterScreen = ({ navigation }: any) => {
                       blurOnSubmit={false}
                     />
                   </View>
+                  {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
                 </View>
 
-                {/* Phone Number */}
+                {/* Phone */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Phone Number</Text>
-                    {errors.phone ? <Text style={styles.errorLabel}>⚠️ {errors.phone}</Text> : null}
-                  </View>
-                  <View style={[styles.inputWrapper, errors.phone ? styles.inputWrapperError : null]}>
+                  <Text style={styles.label}>Phone Number</Text>
+                  <View style={[styles.inputWrapper, errors.phone ? styles.inputError : null]}>
                     <Text style={styles.inputIcon}>📱</Text>
                     <TextInput
                       ref={phoneInputRef}
@@ -233,15 +260,13 @@ export const RegisterScreen = ({ navigation }: any) => {
                       blurOnSubmit={false}
                     />
                   </View>
+                  {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
                 </View>
 
-                {/* Password Field */}
+                {/* Password */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Password</Text>
-                    {errors.password ? <Text style={styles.errorLabel}>⚠️ {errors.password}</Text> : null}
-                  </View>
-                  <View style={[styles.inputWrapper, errors.password ? styles.inputWrapperError : null]}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={[styles.inputWrapper, errors.password ? styles.inputError : null]}>
                     <Text style={styles.inputIcon}>🔒</Text>
                     <TextInput
                       ref={passwordInputRef}
@@ -263,20 +288,18 @@ export const RegisterScreen = ({ navigation }: any) => {
                       <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
                     </TouchableOpacity>
                   </View>
+                  {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
                 </View>
 
-                {/* Confirm Password Field */}
+                {/* Confirm Password */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Confirm Password</Text>
-                    {errors.confirmPassword ? <Text style={styles.errorLabel}>⚠️ {errors.confirmPassword}</Text> : null}
-                  </View>
-                  <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputWrapperError : null]}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputError : null]}>
                     <Text style={styles.inputIcon}>🔐</Text>
                     <TextInput
                       ref={confirmPasswordInputRef}
                       style={styles.input}
-                      placeholder="Confirm your security password"
+                      placeholder="Confirm your password"
                       placeholderTextColor="#9CA3AF"
                       value={confirmPassword}
                       onChangeText={text => { setConfirmPassword(text); if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' }); }}
@@ -292,28 +315,40 @@ export const RegisterScreen = ({ navigation }: any) => {
                       <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
                     </TouchableOpacity>
                   </View>
+                  {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
                 </View>
 
-                {/* Action Trigger Button */}
+                {/* Register Button */}
                 <TouchableOpacity
                   style={[styles.registerButton, loading && styles.registerButtonDisabled]}
                   onPress={handleRegister}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" size="large" />
-                  ) : (
-                    <View style={styles.buttonContent}>
-                      <Text style={styles.registerButtonText}>Create Secure Account</Text>
-                      <Text style={styles.registerButtonSubtext}>Access emergency tools instantly</Text>
-                    </View>
-                  )}
+                  <LinearGradient
+                    colors={['#DC2626', '#B91C1C']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.registerGradient}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={styles.registerButtonText}>Create Account</Text>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
 
-                {/* Alternate Navigation Hook */}
+                {/* Divider */}
+                <View style={styles.dividerContainer}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                {/* Login Link */}
                 <View style={styles.loginContainer}>
-                  <Text style={styles.loginText}>Already registered?{'   '}</Text>
+                  <Text style={styles.loginText}>Already have an account? </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
                     <Text style={styles.loginLinkText}>Sign In</Text>
                   </TouchableOpacity>
@@ -322,157 +357,226 @@ export const RegisterScreen = ({ navigation }: any) => {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-    </SafeAreaView>
+      </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  fullScreenContainer: {
     flex: 1,
-    backgroundColor: '#eccccc',
+    backgroundColor: '#FEF2F2',
+  },
+  gradient: {
+    flex: 1,
   },
   container: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 30,
+    paddingHorizontal: isSmallDevice ? 16 : 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 20,
+    paddingBottom: 30,
   },
   animatedContainer: {
-    flex: 1,
+    width: '100%',
   },
+
+  // Back Button
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  backIcon: {
+    fontSize: 24,
+    color: '#DC2626',
+    fontWeight: '300',
+    marginRight: 2,
+  },
+  backText: {
+    fontSize: 15,
+    color: '#DC2626',
+    fontWeight: '500',
+  },
+
+  // Header with Logo
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: isSmallDevice ? 20 : 30,
   },
-  iconContainer: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoWrapper: {
+    width: isSmallDevice ? 100 : 120,
+    height: isSmallDevice ? 100 : 120,
+    borderRadius: isSmallDevice ? 50 : 60,
     marginBottom: 16,
     shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
     elevation: 8,
   },
-  iconText: {
-    fontSize: 38,
+  logoGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: isSmallDevice ? 50 : 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  logo: {
+    width: '88%',
+    height: '88%',
   },
   title: {
-    fontSize: 28,
+    fontSize: isSmallDevice ? 24 : 28,
     fontWeight: '800',
-    color: '#DC2626',
-    marginBottom: 6,
-    letterSpacing: -0.5,
+    color: '#1F2937',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  subtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  subtitleLine: {
+    flex: 0.15,
+    height: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 1,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: isSmallDevice ? 13 : 14,
+    color: '#4B5563',
+    fontWeight: '400',
+    paddingHorizontal: 12,
     textAlign: 'center',
   },
-  formContainer: {
-    width: '100%',
+
+  // Form Card
+  cardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: isSmallDevice ? 18 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   inputGroup: {
     marginBottom: 16,
   },
-  labelContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
   label: {
-    fontSize: 13,
+    fontSize: isSmallDevice ? 13 : 14,
     fontWeight: '600',
     color: '#1F2937',
-  },
-  errorLabel: {
-    fontSize: 12,
-    color: '#EF4444',
-    fontWeight: '500',
+    marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
     borderColor: '#E2E8F0',
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  inputWrapperError: {
-    borderColor: '#EF4444',
+  inputError: {
+    borderColor: '#DC2626',
+    borderWidth: 2,
     backgroundColor: '#FEF2F2',
   },
   inputIcon: {
-    fontSize: 18,
+    fontSize: 16,
     paddingLeft: 14,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    fontSize: 15,
+    padding: isSmallDevice ? 12 : 14,
+    paddingLeft: 10,
+    fontSize: isSmallDevice ? 14 : 15,
     color: '#1F2937',
   },
   eyeIcon: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    padding: 14,
   },
   eyeText: {
     fontSize: 18,
   },
+  errorText: {
+    color: '#DC2626',
+    fontSize: isSmallDevice ? 11 : 12,
+    marginTop: 4,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+
+  // Register Button
   registerButton: {
-    backgroundColor: '#DC2626',
-    padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
+    overflow: 'hidden',
     shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
-  registerButtonDisabled: {
-    opacity: 0.65,
-  },
-  buttonContent: {
+  registerGradient: {
+    padding: isSmallDevice ? 14 : 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: isSmallDevice ? 48 : 56,
+  },
+  registerButtonDisabled: {
+    opacity: 0.7,
   },
   registerButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: isSmallDevice ? 15 : 16,
     fontWeight: '700',
+    letterSpacing: 1,
   },
-  registerButtonSubtext: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 11,
-    marginTop: 2,
+
+  // Divider
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
   },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    fontSize: isSmallDevice ? 12 : 13,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+
+  // Login Link
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+    alignItems: 'center',
   },
   loginText: {
-    fontSize: 14,
+    fontSize: isSmallDevice ? 13 : 14,
     color: '#6B7280',
   },
   loginLinkText: {
-    fontSize: 14,
+    fontSize: isSmallDevice ? 13 : 14,
     color: '#DC2626',
     fontWeight: '700',
   },
 });
+
+export default RegisterScreen;

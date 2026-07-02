@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
 
   // Info banner
   infoBanner: {
-    backgroundColor: colors.primaryBg,
+    //backgroundColor: colors.primaryBg,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     width: '100%',

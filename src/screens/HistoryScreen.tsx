@@ -1,9 +1,4 @@
 // src/screens/HistoryScreen.tsx
-// Changes from original:
-//   • Removed unused `width` from Dimensions (only `height` is used for modal max-height)
-//   • Added useSafeAreaInsets to fix header hidden under the status bar on all devices
-//   • All existing logic preserved: search, filter tabs, detail modal, animations
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -17,10 +12,16 @@ import {
   Animated,
   Dimensions,
   Alert,
+  StatusBar,
+  Platform,
+  Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const LOGO = require('../../assets/logo.png');
 const { height } = Dimensions.get('window');
+const isSmallDevice = height < 700;
 
 interface SOSHistory {
   id: string;
@@ -119,6 +120,15 @@ export const HistoryScreen = ({ navigation }: any) => {
     }
   };
 
+  const getStatusBgColor = (status: string) => {
+    switch (status) {
+      case 'resolved': return '#D1FAE5';
+      case 'pending': return '#FEF3C7';
+      case 'cancelled': return '#FEE2E2';
+      default: return '#F3F4F6';
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved': return '✅';
@@ -135,6 +145,16 @@ export const HistoryScreen = ({ navigation }: any) => {
       case 'police': return '👮';
       case 'accident': return '🚗';
       default: return '📞';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'medical': return '#DC2626';
+      case 'fire': return '#F97316';
+      case 'police': return '#3B82F6';
+      case 'accident': return '#7C3AED';
+      default: return '#6B7280';
     }
   };
 
@@ -187,10 +207,12 @@ export const HistoryScreen = ({ navigation }: any) => {
       <View style={styles.historyHeader}>
         <View style={styles.historyTypeContainer}>
           <Text style={styles.historyTypeIcon}>{getTypeIcon(item.type)}</Text>
-          <Text style={styles.historyType}>{item.type.toUpperCase()}</Text>
+          <Text style={[styles.historyType, { color: getTypeColor(item.type) }]}>
+            {item.type.toUpperCase()}
+          </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(item.status) }]}>
+          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
             {getStatusIcon(item.status)} {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
           </Text>
         </View>
@@ -214,16 +236,33 @@ export const HistoryScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>📋 SOS History</Text>
-        <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate('RequestHistory')}>
-          <Text style={styles.filterButtonText}>📊</Text>
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      
+      {/* Full Width Red Header with Logo */}
+      <LinearGradient
+        colors={['#DC2626', '#991B1B']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fullHeader, { paddingTop: insets.top + 8 }]}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+
+          <View style={styles.headerCenter}>
+            <Image source={LOGO} style={styles.headerLogo} resizeMode="contain" />
+            <Text style={styles.headerTitle}>SOS History</Text>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.filterButton} 
+            onPress={() => navigation.navigate('RequestHistory')}
+          >
+            <Text style={styles.filterButtonText}>📊</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Search */}
       <View style={styles.searchContainer}>
@@ -278,7 +317,14 @@ export const HistoryScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.goHomeButton} onPress={() => navigation.navigate('Home')}>
-              <Text style={styles.goHomeText}>Go to Home</Text>
+              <LinearGradient
+                colors={['#DC2626', '#B91C1C']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.goHomeGradient}
+              >
+                <Text style={styles.goHomeText}>Go to Home</Text>
+              </LinearGradient>
             </TouchableOpacity>
           )}
         </View>
@@ -325,8 +371,8 @@ export const HistoryScreen = ({ navigation }: any) => {
             {selectedItem && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.modalStatus}>
-                  <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(selectedItem.status) }]}>
-                    <Text style={styles.modalStatusText}>
+                  <View style={[styles.modalStatusBadge, { backgroundColor: getStatusBgColor(selectedItem.status) }]}>
+                    <Text style={[styles.modalStatusText, { color: getStatusColor(selectedItem.status) }]}>
                       {getStatusIcon(selectedItem.status)}{' '}
                       {selectedItem.status.charAt(0).toUpperCase() + selectedItem.status.slice(1)}
                     </Text>
@@ -355,7 +401,7 @@ export const HistoryScreen = ({ navigation }: any) => {
                   <View style={styles.modalDetail}>
                     <Text style={styles.modalDetailLabel}>📍 Coordinates</Text>
                     <Text style={styles.modalDetailValue}>
-                      {selectedItem.latitude}, {selectedItem.longitude}
+                      {selectedItem.latitude.toFixed(4)}, {selectedItem.longitude.toFixed(4)}
                     </Text>
                   </View>
                 )}
@@ -399,27 +445,56 @@ export const HistoryScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: {
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F5F5F5' 
+  },
+
+  // Full Width Red Header with Logo
+  fullHeader: {
+    paddingBottom: 16,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
-  backButton: { padding: 4 },
-  backText: { fontSize: 14, color: '#2563EB', fontWeight: '500' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  filterButton: { padding: 4 },
-  filterButtonText: { fontSize: 18 },
+  backButton: { 
+    padding: 4,
+  },
+  backText: { 
+    fontSize: 15, 
+    color: '#FFFFFF', 
+    fontWeight: '500' 
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
+    marginRight: 8,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF',
+  },
+  headerTitle: { 
+    fontSize: isSmallDevice ? 16 : 18, 
+    fontWeight: '700', 
+    color: '#FFFFFF' 
+  },
+  filterButton: { 
+    padding: 4 
+  },
+  filterButtonText: { 
+    fontSize: 18,
+    color: '#FFFFFF' 
+  },
+
+  // Search
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -428,84 +503,309 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 14, color: '#1F2937' },
-  clearIcon: { fontSize: 16, color: '#9CA3AF', padding: 4 },
-  filterContainer: { paddingHorizontal: 16, marginBottom: 8 },
-  filterTab: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', marginRight: 8 },
-  filterTabActive: { backgroundColor: '#2563EB' },
-  filterText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
-  filterTextActive: { color: '#FFFFFF' },
-  listContent: { padding: 16, paddingTop: 8 },
-  historyItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  historyTypeContainer: { flexDirection: 'row', alignItems: 'center' },
-  historyTypeIcon: { fontSize: 16, marginRight: 6 },
-  historyType: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { color: '#FFFFFF', fontSize: 10, fontWeight: '500' },
-  historyDetails: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  historyLocation: { fontSize: 13, color: '#6B7280' },
-  historyTime: { fontSize: 12, color: '#9CA3AF' },
-  historyNotes: { fontSize: 12, color: '#6B7280', marginBottom: 8, fontStyle: 'italic' },
-  historyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  idBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  idText: { fontSize: 10, color: '#6B7280' },
-  viewDetails: { fontSize: 12, color: '#2563EB', fontWeight: '500' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  emptyEmoji: { fontSize: 64, marginBottom: 16 },
-  emptyTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
-  emptyText: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 16 },
-  clearSearchButton: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 8, paddingHorizontal: 24 },
-  clearSearchText: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
-  goHomeButton: { backgroundColor: '#2563EB', padding: 16, borderRadius: 8, paddingHorizontal: 32 },
-  goHomeText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
-  modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  searchIcon: { 
+    fontSize: 16, 
+    marginRight: 8 
+  },
+  searchInput: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    fontSize: 14, 
+    color: '#1F2937' 
+  },
+  clearIcon: { 
+    fontSize: 16, 
+    color: '#9CA3AF', 
+    padding: 4 
+  },
+
+  // Filter Tabs
+  filterContainer: { 
+    paddingHorizontal: 16, 
+    marginBottom: 8 
+  },
+  filterTab: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    backgroundColor: '#F3F4F6', 
+    marginRight: 8 
+  },
+  filterTabActive: { 
+    backgroundColor: '#DC2626' 
+  },
+  filterText: { 
+    fontSize: 12, 
+    color: '#6B7280', 
+    fontWeight: '500' 
+  },
+  filterTextActive: { 
+    color: '#FFFFFF' 
+  },
+
+  // List
+  listContent: { 
+    padding: 16, 
+    paddingTop: 8 
+  },
+  historyItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  historyHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  historyTypeContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  historyTypeIcon: { 
+    fontSize: 16, 
+    marginRight: 6 
+  },
+  historyType: { 
+    fontSize: 14, 
+    fontWeight: '700' 
+  },
+  statusBadge: { 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 12 
+  },
+  statusText: { 
+    fontSize: 10, 
+    fontWeight: '600' 
+  },
+  historyDetails: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 4 
+  },
+  historyLocation: { 
+    fontSize: 13, 
+    color: '#6B7280' 
+  },
+  historyTime: { 
+    fontSize: 12, 
+    color: '#9CA3AF' 
+  },
+  historyNotes: { 
+    fontSize: 12, 
+    color: '#6B7280', 
+    marginBottom: 8, 
+    fontStyle: 'italic' 
+  },
+  historyFooter: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginTop: 4 
+  },
+  idBadge: { 
+    backgroundColor: '#F3F4F6', 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    borderRadius: 4 
+  },
+  idText: { 
+    fontSize: 10, 
+    color: '#6B7280' 
+  },
+  viewDetails: { 
+    fontSize: 12, 
+    color: '#DC2626', 
+    fontWeight: '600' 
+  },
+
+  // Empty State
+  emptyContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 32 
+  },
+  emptyEmoji: { 
+    fontSize: 64, 
+    marginBottom: 16 
+  },
+  emptyTitle: { 
+    fontSize: 22, 
+    fontWeight: '700', 
+    color: '#1F2937', 
+    marginBottom: 4 
+  },
+  emptyText: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    textAlign: 'center', 
+    marginBottom: 16 
+  },
+  clearSearchButton: { 
+    backgroundColor: '#F3F4F6', 
+    padding: 12, 
+    borderRadius: 8, 
+    paddingHorizontal: 24 
+  },
+  clearSearchText: { 
+    color: '#6B7280', 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+  goHomeButton: { 
+    borderRadius: 8, 
+    overflow: 'hidden' 
+  },
+  goHomeGradient: { 
+    paddingVertical: 12, 
+    paddingHorizontal: 32, 
+    alignItems: 'center' 
+  },
+  goHomeText: { 
+    color: '#FFFFFF', 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
+
+  // Modal
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'flex-end' 
+  },
+  modalBackdrop: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    backgroundColor: 'rgba(0,0,0,0.4)' 
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
     paddingBottom: 30,
-    maxHeight: height * 0.8,
+    maxHeight: height * 0.85,
   },
-  modalHandle: { width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-  modalTypeIcon: { fontSize: 24, marginRight: 10 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1F2937' },
-  modalClose: { fontSize: 20, color: '#6B7280', padding: 4 },
-  modalStatus: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalStatusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  modalStatusText: { color: '#FFFFFF', fontSize: 13, fontWeight: '500' },
-  modalId: { fontSize: 12, color: '#9CA3AF' },
-  modalDetail: { marginBottom: 14 },
-  modalDetailLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 2 },
-  modalDetailValue: { fontSize: 15, color: '#1F2937' },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 12 },
-  modalActionButton: { flex: 1, padding: 12, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
-  modalActionResolved: { backgroundColor: '#D1FAE5' },
-  modalActionCancel: { backgroundColor: '#FEE2E2' },
-  modalActionText: { fontSize: 14, fontWeight: '500', color: '#1F2937' },
-  modalCloseButton: { backgroundColor: '#F3F4F6', padding: 14, borderRadius: 10, alignItems: 'center' },
-  modalCloseButtonText: { fontSize: 15, fontWeight: '500', color: '#6B7280' },
+  modalHandle: { 
+    width: 40, 
+    height: 4, 
+    backgroundColor: '#D1D5DB', 
+    borderRadius: 2, 
+    alignSelf: 'center', 
+    marginBottom: 16 
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  modalTitleContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  modalTypeIcon: { 
+    fontSize: 24, 
+    marginRight: 10 
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: '700', 
+    color: '#1F2937' 
+  },
+  modalClose: { 
+    fontSize: 20, 
+    color: '#6B7280', 
+    padding: 4 
+  },
+  modalStatus: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  modalStatusBadge: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 20 
+  },
+  modalStatusText: { 
+    fontSize: 13, 
+    fontWeight: '600' 
+  },
+  modalId: { 
+    fontSize: 12, 
+    color: '#9CA3AF' 
+  },
+  modalDetail: { 
+    marginBottom: 14 
+  },
+  modalDetailLabel: { 
+    fontSize: 12, 
+    fontWeight: '600', 
+    color: '#6B7280', 
+    marginBottom: 2 
+  },
+  modalDetailValue: { 
+    fontSize: 15, 
+    color: '#1F2937' 
+  },
+  modalActions: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginTop: 8, 
+    marginBottom: 12 
+  },
+  modalActionButton: { 
+    flex: 1, 
+    padding: 12, 
+    borderRadius: 10, 
+    alignItems: 'center', 
+    marginHorizontal: 4 
+  },
+  modalActionResolved: { 
+    backgroundColor: '#D1FAE5' 
+  },
+  modalActionCancel: { 
+    backgroundColor: '#FEE2E2' 
+  },
+  modalActionText: { 
+    fontSize: 14, 
+    fontWeight: '500', 
+    color: '#1F2937' 
+  },
+  modalCloseButton: { 
+    backgroundColor: '#F3F4F6', 
+    padding: 14, 
+    borderRadius: 10, 
+    alignItems: 'center' 
+  },
+  modalCloseButtonText: { 
+    fontSize: 15, 
+    fontWeight: '500', 
+    color: '#6B7280' 
+  },
 });
+
+export default HistoryScreen;
