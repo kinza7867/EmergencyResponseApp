@@ -1,0 +1,50 @@
+const validateEmergencyRequest = (req, res, next) => {
+  const { emergencyType, location } = req.body;
+
+  // Check emergency type
+  if (!emergencyType) {
+    return res.status(400).json({
+      success: false,
+      message: "Emergency type is required",
+    });
+  }
+
+  // Allowed emergency types
+  const allowedTypes = [
+    "medical",
+    "fire",
+    "police",
+    "accident",
+    "other",
+  ];
+
+  if (!allowedTypes.includes(emergencyType)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid emergency type",
+    });
+  }
+
+  // Check location
+  if (!location) {
+    return res.status(400).json({
+      success: false,
+      message: "Location is required",
+    });
+  }
+
+  const { label, latitude, longitude } = location;
+
+  if (!label || latitude === undefined || longitude === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: "Complete location information is required",
+    });
+  }
+
+  next();
+};
+
+module.exports = {
+  validateEmergencyRequest,
+};
