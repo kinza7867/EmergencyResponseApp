@@ -214,12 +214,9 @@ export const LoginScreen = ({ navigation }: any) => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      console.log('📧 Attempting login with:', email);
       const response = await authService.login(email, password);
-      console.log('✅ Login response:', response);
       if (response.success) {
-        // Format user data properly
-        const userData = response.data.user;
+        const userData: any = response.data.user || {};
         const formattedUser = {
           id: userData.id || userData.userId || 'user-' + Date.now(),
           name: userData.name || userData.fullName || 'User',
@@ -230,8 +227,6 @@ export const LoginScreen = ({ navigation }: any) => {
         navigation.replace('Main');
       }
     } catch (error: any) {
-      console.log('❌ Login error:', error.message);
-      
       const errorMessage = error.message?.toLowerCase() || '';
       
       if (errorMessage.includes('not found') || 
@@ -248,22 +243,26 @@ export const LoginScreen = ({ navigation }: any) => {
             {
               text: 'Cancel',
               style: 'cancel',
+              onPress: () => {
+                setLoading(false);
+              }
             },
             {
               text: 'Create Account',
               onPress: () => {
-                navigation.navigate('Register', { 
+                setLoading(false);
+                navigation.replace('Register', { 
                   email: email,
                   password: password 
                 });
               },
               style: 'default',
             },
-          ],
-          { cancelable: true }
+          ]
         );
       } else {
         Alert.alert('Login Failed', error.message || 'Please try again.');
+        setLoading(false);
       }
       
     } finally {
@@ -345,7 +344,7 @@ export const LoginScreen = ({ navigation }: any) => {
                     />
                   </Animated.View>
 
-                  {/* Expanded Content - FIXED: Only render when expanded */}
+                  {/* Expanded Content */}
                   {isSosExpanded && (
                     <Animated.View 
                       style={[
@@ -359,7 +358,7 @@ export const LoginScreen = ({ navigation }: any) => {
                       ]}
                     >
                       <Text style={styles.sosExpandedText}>
-                        🚨 EMERGENCY
+                        EMERGENCY
                       </Text>
                       <Animated.View 
                         style={[
@@ -409,7 +408,7 @@ export const LoginScreen = ({ navigation }: any) => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email Address</Text>
                   <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
-                    <Text style={styles.inputIcon}>📧</Text>
+                    <Text style={styles.inputIcon}>✉</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="Enter your email"
@@ -432,7 +431,7 @@ export const LoginScreen = ({ navigation }: any) => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Password</Text>
                   <View style={[styles.inputWrapper, errors.password ? styles.inputError : null]}>
-                    <Text style={styles.inputIcon}>🔐</Text>
+                    <Text style={styles.inputIcon}>🔒</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="Enter your password"
@@ -451,7 +450,9 @@ export const LoginScreen = ({ navigation }: any) => {
                       style={styles.eyeIcon}
                       onPress={() => setShowPassword(!showPassword)}
                     >
-                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      <Text style={styles.eyeText}>
+                        {showPassword ? '👁' : '👁‍🗨'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
@@ -747,7 +748,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   eyeText: {
-    fontSize: 18,
+    fontSize: 22,
+    color: '#6B7280',
   },
   errorText: {
     color: '#DC2626',

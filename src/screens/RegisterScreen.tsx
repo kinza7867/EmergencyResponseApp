@@ -13,8 +13,6 @@ import {
   StatusBar,
   ScrollView,
   Animated,
-  Keyboard,
-  TouchableWithoutFeedback,
   Image,
   Dimensions,
 } from 'react-native';
@@ -33,7 +31,7 @@ export const RegisterScreen = ({ route, navigation }: any) => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState(preFilledEmail || '');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+92');
   const [password, setPassword] = useState(preFilledPassword || '');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,7 +62,11 @@ export const RegisterScreen = ({ route, navigation }: any) => {
   }, []);
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  const validatePhone = (value: string) => /^[0-9]{10,15}$/.test(value);
+  const validatePhone = (value: string) => {
+    // Remove +92 prefix for validation if present
+    const cleanNumber = value.replace('+92', '');
+    return /^[0-9]{10}$/.test(cleanNumber);
+  };
 
   const validateForm = () => {
     let isValid = true;
@@ -81,11 +83,11 @@ export const RegisterScreen = ({ route, navigation }: any) => {
       newErrors.email = 'Please enter a valid email address';
       isValid = false;
     }
-    if (!phone.trim()) {
+    if (!phone.trim() || phone === '+92') {
       newErrors.phone = 'Phone number is required';
       isValid = false;
     } else if (!validatePhone(phone)) {
-      newErrors.phone = 'Please enter a valid phone number (10–15 digits)';
+      newErrors.phone = 'Please enter a valid 10-digit phone number';
       isValid = false;
     }
     if (!password.trim()) {
@@ -111,21 +113,33 @@ export const RegisterScreen = ({ route, navigation }: any) => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const response = await authService.register({ name, email, phone, password });
+      // Clean phone number for API (remove +92 if present)
+      const cleanPhone = phone.replace('+92', '');
+      const response = await authService.register({ 
+        name, 
+        email, 
+        phone: cleanPhone, 
+        password 
+      });
       if (response.success) {
         Alert.alert(
-          '✅ Registration Successful',
+          'Registration Successful',
           'Your account has been created. Please login.',
           [
             {
               text: 'Sign In',
-              onPress: () => navigation.navigate('Login'),
+              onPress: () => {
+                navigation.navigate('Login', { 
+                  email: email,
+                  password: password 
+                });
+              },
             },
           ]
         );
         setName('');
         setEmail('');
-        setPhone('');
+        setPhone('+92');
         setPassword('');
         setConfirmPassword('');
       }
@@ -134,6 +148,31 @@ export const RegisterScreen = ({ route, navigation }: any) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle phone input with +92 prefix
+  const handlePhoneChange = (text: string) => {
+    // If text is empty or just '+', set to '+92'
+    if (!text || text === '+') {
+      setPhone('+92');
+      return;
+    }
+    
+    // If text doesn't start with +92, add it
+    if (!text.startsWith('+92')) {
+      // Remove any non-digit characters and limit to 10 digits after +92
+      const digits = text.replace(/\D/g, '');
+      const limitedDigits = digits.slice(0, 10);
+      setPhone(`+92${limitedDigits}`);
+      return;
+    }
+    
+    // If starts with +92, allow editing after prefix
+    const prefix = '+92';
+    const rest = text.slice(prefix.length);
+    const digits = rest.replace(/\D/g, '');
+    const limitedDigits = digits.slice(0, 10);
+    setPhone(`+92${limitedDigits}`);
   };
 
   return (
@@ -204,16 +243,20 @@ export const RegisterScreen = ({ route, navigation }: any) => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Full Name</Text>
                   <View style={[styles.inputWrapper, errors.name ? styles.inputError : null]}>
-                    <Text style={styles.inputIcon}>👤</Text>
+                    <Text style={styles.inputIcon}>✉</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="Enter your full name"
                       placeholderTextColor="#9CA3AF"
                       value={name}
-                      onChangeText={text => { setName(text); if (errors.name) setErrors({ ...errors, name: '' }); }}
+                      onChangeText={text => { 
+                        setName(text); 
+                        if (errors.name) setErrors({ ...errors, name: '' }); 
+                      }}
                       returnKeyType="next"
                       onSubmitEditing={() => emailInputRef.current?.focus()}
                       blurOnSubmit={false}
+                      maxLength={50}
                     />
                   </View>
                   {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
@@ -223,20 +266,24 @@ export const RegisterScreen = ({ route, navigation }: any) => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email Address</Text>
                   <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
-                    <Text style={styles.inputIcon}>📧</Text>
+                    <Text style={styles.inputIcon}>@</Text>
                     <TextInput
                       ref={emailInputRef}
                       style={styles.input}
                       placeholder="Enter your email"
                       placeholderTextColor="#9CA3AF"
                       value={email}
-                      onChangeText={text => { setEmail(text); if (errors.email) setErrors({ ...errors, email: '' }); }}
+                      onChangeText={text => { 
+                        setEmail(text); 
+                        if (errors.email) setErrors({ ...errors, email: '' }); 
+                      }}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
                       returnKeyType="next"
                       onSubmitEditing={() => phoneInputRef.current?.focus()}
                       blurOnSubmit={false}
+                      maxLength={100}
                     />
                   </View>
                   {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
@@ -250,14 +297,15 @@ export const RegisterScreen = ({ route, navigation }: any) => {
                     <TextInput
                       ref={phoneInputRef}
                       style={styles.input}
-                      placeholder="Enter your phone number"
+                      placeholder="+92XXXXXXXXXX"
                       placeholderTextColor="#9CA3AF"
                       value={phone}
-                      onChangeText={text => { setPhone(text); if (errors.phone) setErrors({ ...errors, phone: '' }); }}
+                      onChangeText={handlePhoneChange}
                       keyboardType="phone-pad"
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                       blurOnSubmit={false}
+                      maxLength={13} // +92 + 10 digits
                     />
                   </View>
                   {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
@@ -274,18 +322,24 @@ export const RegisterScreen = ({ route, navigation }: any) => {
                       placeholder="Create security password"
                       placeholderTextColor="#9CA3AF"
                       value={password}
-                      onChangeText={text => { setPassword(text); if (errors.password) setErrors({ ...errors, password: '' }); }}
+                      onChangeText={text => { 
+                        setPassword(text); 
+                        if (errors.password) setErrors({ ...errors, password: '' }); 
+                      }}
                       secureTextEntry={!showPassword}
                       returnKeyType="next"
                       onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
                       blurOnSubmit={false}
+                      maxLength={30}
                     />
                     <TouchableOpacity
                       style={styles.eyeIcon}
                       onPress={() => setShowPassword(!showPassword)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      <Text style={styles.eyeText}>
+                        {showPassword ? '◎' : '●'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
@@ -295,24 +349,30 @@ export const RegisterScreen = ({ route, navigation }: any) => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputError : null]}>
-                    <Text style={styles.inputIcon}>🔐</Text>
+                    <Text style={styles.inputIcon}>🔒</Text>
                     <TextInput
                       ref={confirmPasswordInputRef}
                       style={styles.input}
                       placeholder="Confirm your password"
                       placeholderTextColor="#9CA3AF"
                       value={confirmPassword}
-                      onChangeText={text => { setConfirmPassword(text); if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' }); }}
+                      onChangeText={text => { 
+                        setConfirmPassword(text); 
+                        if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' }); 
+                      }}
                       secureTextEntry={!showConfirmPassword}
                       returnKeyType="done"
                       onSubmitEditing={handleRegister}
+                      maxLength={30}
                     />
                     <TouchableOpacity
                       style={styles.eyeIcon}
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      <Text style={styles.eyeText}>
+                        {showConfirmPassword ? '◎' : '●'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
@@ -508,7 +568,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   eyeText: {
-    fontSize: 18,
+    fontSize: 20,
+    color: '#6B7280',
   },
   errorText: {
     color: '#DC2626',

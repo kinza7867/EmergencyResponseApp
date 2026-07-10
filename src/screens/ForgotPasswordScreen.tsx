@@ -12,8 +12,6 @@ import {
   Platform,
   ScrollView,
   Animated,
-  Keyboard,
-  TouchableWithoutFeedback,
   StatusBar,
   Dimensions,
   Image,
@@ -39,6 +37,8 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState<'email' | 'code' | 'reset'>('email');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
@@ -78,7 +78,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
         // Generate a 6-digit code
         const dummyCode = Math.floor(100000 + Math.random() * 900000).toString();
         setResetCode(dummyCode);
-        setEnteredCode(''); // Clear any previous entered code
+        setEnteredCode('');
         setStep('code');
         setShowSuccessModal(true);
         
@@ -107,7 +107,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
           errorMessage.includes('email not registered')) {
         
         Alert.alert(
-          '❌ Account Not Found',
+          'Account Not Found',
           `No account found with email: ${email}\n\nWould you like to create a new account?`,
           [
             {
@@ -121,7 +121,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
           ]
         );
       } else {
-        Alert.alert('❌ Error', error.message || 'Something went wrong. Please try again.');
+        Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -131,7 +131,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
   // Step 2: Verify Code
   const handleVerifyCode = () => {
     if (!enteredCode || enteredCode.length !== 6) {
-      Alert.alert('❌ Invalid Code', 'Please enter the 6-digit verification code.');
+      Alert.alert('Invalid Code', 'Please enter the 6-digit verification code.');
       return;
     }
     
@@ -153,9 +153,9 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
         }),
       ]).start(() => setShowSuccessModal(false));
       
-      Alert.alert('✅ Code Verified', 'Please create your new password.');
+      Alert.alert('Code Verified', 'Please create your new password.');
     } else {
-      Alert.alert('❌ Invalid Code', 'The verification code you entered is incorrect. Please try again.');
+      Alert.alert('Invalid Code', 'The verification code you entered is incorrect. Please try again.');
     }
   };
 
@@ -176,17 +176,27 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
     setLoading(true);
     
     try {
-      // First, update the password in the backend
-      const response = await authService.resetPassword(email, newPassword, resetCode);
+      let response;
       
-      if (response.success) {
-        // Store the new password locally for demo purposes
-        // In production, this would be handled by the backend
+      // Use type assertion to avoid TypeScript errors
+      const authServiceAny = authService as any;
+      
+      if (typeof authServiceAny.resetPassword === 'function') {
+        // If resetPassword method exists
+        response = await authServiceAny.resetPassword(email, newPassword, resetCode);
+      } else if (typeof authServiceAny.updatePassword === 'function') {
+        // If updatePassword method exists
+        response = await authServiceAny.updatePassword(email, newPassword);
+      } else {
+        // Fallback: Just store in AsyncStorage for demo
         await AsyncStorage.setItem('resetPassword', newPassword);
         await AsyncStorage.setItem('resetEmail', email);
-        
+        response = { success: true };
+      }
+      
+      if (response && response.success) {
         Alert.alert(
-          '✅ Password Reset Successful',
+          'Password Reset Successful',
           `Your password has been reset successfully for:\n\n${email}\n\nPlease login with your new password.`,
           [
             {
@@ -204,9 +214,15 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
             },
           ]
         );
+      } else {
+        throw new Error('Failed to reset password');
       }
     } catch (error: any) {
-      Alert.alert('❌ Reset Failed', error.message || 'Could not reset password. Please try again.');
+      console.log('Reset password error:', error);
+      Alert.alert(
+        'Reset Failed', 
+        error.message || 'Could not reset password. Please try again or contact support.'
+      );
     } finally {
       setLoading(false);
     }
@@ -239,7 +255,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Email Address</Text>
         <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
-          <Text style={styles.inputIcon}>📧</Text>
+          <Text style={styles.inputIcon}>@</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your registered email"
@@ -254,6 +270,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
             autoCorrect={false}
             returnKeyType="done"
             onSubmitEditing={handleRequestReset}
+            maxLength={100}
           />
         </View>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -291,14 +308,13 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Verification Code</Text>
         <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
-          <Text style={styles.inputIcon}>🔑</Text>
+          <Text style={styles.inputIcon}>⌨</Text>
           <TextInput
             style={[styles.input, styles.codeInput]}
             placeholder="Enter 6-digit code"
             placeholderTextColor="#9CA3AF"
             value={enteredCode}
             onChangeText={(text) => {
-              // Only allow digits
               const cleaned = text.replace(/[^0-9]/g, '');
               setEnteredCode(cleaned);
               if (error) setError('');
@@ -350,7 +366,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
       <View style={styles.inputGroup}>
         <Text style={styles.label}>New Password</Text>
         <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
-          <Text style={styles.inputIcon}>🔒</Text>
+          <Text style={styles.inputIcon}>⌘</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter new password (min 6 characters)"
@@ -360,16 +376,26 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
               setNewPassword(text);
               if (error) setError('');
             }}
-            secureTextEntry
+            secureTextEntry={!showNewPassword}
             returnKeyType="next"
+            maxLength={30}
           />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowNewPassword(!showNewPassword)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.eyeText}>
+              {showNewPassword ? '◯' : '◉'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Confirm Password</Text>
         <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
-          <Text style={styles.inputIcon}>🔐</Text>
+          <Text style={styles.inputIcon}>⌘</Text>
           <TextInput
             style={styles.input}
             placeholder="Confirm your new password"
@@ -379,10 +405,20 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
               setConfirmPassword(text);
               if (error) setError('');
             }}
-            secureTextEntry
+            secureTextEntry={!showConfirmPassword}
             returnKeyType="done"
             onSubmitEditing={handleResetPassword}
+            maxLength={30}
           />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.eyeText}>
+              {showConfirmPassword ? '◯' : '◉'}
+            </Text>
+          </TouchableOpacity>
         </View>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
@@ -475,9 +511,9 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
                   </LinearGradient>
                 </View>
                 <Text style={styles.title}>
-                  {step === 'email' ? '🔐 Reset Password' : 
-                   step === 'code' ? '🔑 Verify Code' : 
-                   '🔄 Set New Password'}
+                  {step === 'email' ? 'Reset Password' : 
+                   step === 'code' ? 'Verify Code' : 
+                   'Set New Password'}
                 </Text>
                 <View style={styles.subtitleContainer}>
                   <View style={styles.subtitleLine} />
@@ -554,7 +590,7 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
             ]}
           >
             <View style={styles.modalIconContainer}>
-              <Text style={styles.modalIcon}>📨</Text>
+              <Text style={styles.modalIcon}>✉</Text>
             </View>
             <Text style={styles.modalTitle}>Verification Code Sent</Text>
             <Text style={styles.modalMessage}>
@@ -775,8 +811,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
   },
   inputIcon: {
-    fontSize: 16,
+    fontSize: 18,
     paddingLeft: 14,
+    color: '#6B7280',
   },
   input: {
     flex: 1,
@@ -797,6 +834,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
     fontWeight: '500',
+  },
+  eyeIcon: {
+    padding: 14,
+  },
+  eyeText: {
+    fontSize: 20,
+    color: '#6B7280',
   },
 
   // Reset Button

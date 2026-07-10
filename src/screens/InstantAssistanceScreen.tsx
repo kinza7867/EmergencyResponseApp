@@ -51,7 +51,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
   const emergencyServices = [
     {
       id: '1',
-      title: '🚨 Emergency Services',
+      title: 'Emergency Services',
       subtitle: 'General Dispatch Services',
       number: '911',
       color: '#DC2626',
@@ -59,7 +59,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
     },
     {
       id: '2',
-      title: '🚑 Medical Emergency',
+      title: 'Medical Emergency',
       subtitle: 'Critical Ambulance & Care',
       number: '1122',
       color: '#EF4444',
@@ -67,7 +67,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
     },
     {
       id: '3',
-      title: '🚒 Fire Department',
+      title: 'Fire Department',
       subtitle: 'Active Rescue Operations',
       number: '16',
       color: '#F97316',
@@ -75,7 +75,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
     },
     {
       id: '4',
-      title: '🚓 Police Department',
+      title: 'Police Department',
       subtitle: 'Law Enforcement Dispatch',
       number: '15',
       color: '#3B82F6',
@@ -93,12 +93,12 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
     Vibration.vibrate([0, 100, 50, 100]);
     
     Alert.alert(
-      `📞 Call ${service}?`,
+      `Call ${service}?`,
       `You are about to place a critical emergency call to ${number}.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: '📞 Call Now',
+          text: 'Call Now',
           style: 'destructive',
           onPress: () => {
             const phoneNumber = Platform.OS === 'android' ? `tel:${number}` : `telprompt:${number}`;
@@ -139,12 +139,12 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
       
       Alert.alert(
-        '📍 Location Found',
+        'Location Found',
         `Lat: ${latitude.toFixed(6)}, Lon: ${longitude.toFixed(6)}`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: '🚨 Send Broadcast',
+            text: 'Send Broadcast',
             style: 'destructive',
             onPress: async () => {
               const targetPhones = quickContacts.map(c => c.phone);
@@ -152,9 +152,9 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
               if (isAvailable) {
                 await SMS.sendSMSAsync(
                   targetPhones,
-                  `🚨 EMERGENCY: I need help!\n📍 Location: ${mapsUrl}`
+                  `EMERGENCY: I need help!\nLocation: ${mapsUrl}`
                 );
-                Alert.alert('✅ Sent!', 'Location sent to all contacts.');
+                Alert.alert('Sent!', 'Location sent to all contacts.');
               }
             }
           }
@@ -236,7 +236,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                     />
                   </LinearGradient>
                 </View>
-                <Text style={styles.title}>🚨 Emergency Assistance</Text>
+                <Text style={styles.title}>Emergency Assistance</Text>
                 <View style={styles.subtitleContainer}>
                   <View style={styles.subtitleLine} />
                   <Text style={styles.subtitle}>Immediate help at your fingertips</Text>
@@ -248,7 +248,9 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
               <View style={styles.cardContainer}>
                 {/* Emergency Warning */}
                 <View style={styles.warningContainer}>
-                  <Text style={styles.warningIcon}>⚠️</Text>
+                  <View style={styles.warningIconContainer}>
+                    <Text style={styles.warningIcon}>!</Text>
+                  </View>
                   <Text style={styles.warningText}>
                     In life-threatening emergencies, call emergency services immediately.
                   </Text>
@@ -256,7 +258,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
 
                 {/* Emergency Services */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>📞 Emergency Hotlines</Text>
+                  <Text style={styles.sectionTitle}>Emergency Hotlines</Text>
                   {emergencyServices.map((service, index) => (
                     <Animated.View
                       key={service.id}
@@ -286,7 +288,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                           <Text style={styles.serviceSubtitle}>{service.subtitle}</Text>
                         </View>
                         <View style={[styles.callButton, { backgroundColor: service.color }]}>
-                          <Text style={styles.callButtonText}>📞 Call</Text>
+                          <Text style={styles.callButtonText}>Call</Text>
                         </View>
                       </TouchableOpacity>
                     </Animated.View>
@@ -295,7 +297,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
 
                 {/* Quick Actions */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+                  <Text style={styles.sectionTitle}>Quick Actions</Text>
                   <View style={styles.quickActionsRow}>
                     <TouchableOpacity 
                       style={styles.quickAction}
@@ -309,8 +311,10 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                         end={{ x: 1, y: 0 }}
                         style={styles.quickActionGradient}
                       >
-                        <Text style={styles.quickActionIcon}>📍</Text>
-                        <Text style={styles.quickActionText}>
+                        <View style={styles.quickActionIconContainer}>
+                          <Text style={styles.quickActionIcon}>📍</Text>
+                        </View>
+                        <Text style={[styles.quickActionText, { color: '#FFFFFF' }]}>
                           {loadingLocation ? 'Locating...' : 'Share Location'}
                         </Text>
                       </LinearGradient>
@@ -322,8 +326,12 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                       activeOpacity={0.7}
                     >
                       <View style={styles.quickActionWhite}>
-                        <Text style={styles.quickActionIcon}>🩹</Text>
-                        <Text style={styles.quickActionText}>First Aid</Text>
+                        <View style={styles.quickActionIconContainer}>
+                          <Text style={styles.quickActionIcon}>🩹</Text>
+                        </View>
+                        <Text style={[styles.quickActionText, { color: '#4B5563' }]}>
+                          First Aid
+                        </Text>
                       </View>
                     </TouchableOpacity>
 
@@ -333,8 +341,12 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                       activeOpacity={0.7}
                     >
                       <View style={styles.quickActionWhite}>
-                        <Text style={styles.quickActionIcon}>🎒</Text>
-                        <Text style={styles.quickActionText}>Supplies</Text>
+                        <View style={styles.quickActionIconContainer}>
+                          <Text style={styles.quickActionIcon}>🎒</Text>
+                        </View>
+                        <Text style={[styles.quickActionText, { color: '#4B5563' }]}>
+                          Supplies
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -342,7 +354,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
 
                 {/* Emergency Contacts */}
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>👤 Emergency Contacts</Text>
+                  <Text style={styles.sectionTitle}>Emergency Contacts</Text>
                   {quickContacts.map((contact, index) => (
                     <Animated.View
                       key={index}
@@ -377,7 +389,7 @@ export const InstantAssistanceScreen = ({ navigation }: any) => {
                 {/* Safety Note */}
                 <View style={styles.noteContainer}>
                   <Text style={styles.noteText}>
-                    💡 Emergency lines are available 24/7. Stay calm, state your location clearly.
+                    Emergency lines are available 24/7. Stay calm, state your location clearly.
                   </Text>
                 </View>
               </View>
@@ -510,9 +522,19 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#DC2626',
   },
-  warningIcon: {
-    fontSize: 20,
+  warningIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
+  },
+  warningIcon: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   warningText: {
     flex: 1,
@@ -597,13 +619,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  quickActionIconContainer: {
+    marginBottom: 4,
+  },
   quickActionIcon: {
     fontSize: isSmallDevice ? 28 : 32,
-    marginBottom: 4,
   },
   quickActionText: {
     fontSize: isSmallDevice ? 10 : 11,
-    color: isSmallDevice ? '#FFFFFF' : '#4B5563',
     fontWeight: '600',
     textAlign: 'center',
   },
