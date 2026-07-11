@@ -1,8 +1,4 @@
 // src/screens/ConfirmationScreen.tsx
-// Week 2 — shown after a successful SOS submission.
-// Displays the Request ID, type, location, and status.
-// Has a "View Tracking" button (Week 3 — Map screen) and "Back to Home".
-
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -12,92 +8,153 @@ import {
   Animated,
   ScrollView,
   StatusBar,
+  Platform,
+  Share,
+  Linking,
+  Alert,
+  Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { EmergencyRequest } from '../services/emergencyService';
-import { colors, spacing, borderRadius, fontSizes, fontWeights, shadows } from '../styles/theme';
 
-const TYPE_META: Record<string, { icon: string; color: string; bgColor: string }> = {
-  medical:  { icon: '🚑', color: colors.danger,        bgColor: colors.dangerBg },
-  fire:     { icon: '🔥', color: colors.fire,          bgColor: colors.fireBg },
-  police:   { icon: '👮', color: colors.police,        bgColor: colors.policeBg },
-  accident: { icon: '🚗', color: colors.accident,      bgColor: colors.accidentBg },
-  other:    { icon: '📞', color: colors.textSecondary, bgColor: colors.borderLight },
+const TYPE_META: Record<string, { icon: string; iconSet: 'ionicons' | 'fontawesome5'; color: string; bgColor: string }> = {
+  medical:  { icon: 'medical', iconSet: 'ionicons', color: '#DC2626', bgColor: '#FEF2F2' },
+  fire:     { icon: 'flame', iconSet: 'ionicons', color: '#F97316', bgColor: '#FFF7ED' },
+  police:   { icon: 'shield', iconSet: 'ionicons', color: '#3B82F6', bgColor: '#EFF6FF' },
+  accident: { icon: 'car', iconSet: 'ionicons', color: '#8B5CF6', bgColor: '#F5F3FF' },
+  rescue:   { icon: 'life-ring', iconSet: 'fontawesome5', color: '#EC4899', bgColor: '#FDF2F8' },
+  other:    { icon: 'alert-circle', iconSet: 'ionicons', color: '#6B7280', bgColor: '#F3F4F6' },
 };
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
 export const ConfirmationScreen = ({ route, navigation }: any) => {
-  // The submitted EmergencyRequest is passed via navigation params
   const request: EmergencyRequest = route.params?.request;
 
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Bounce-in animation for the success icon
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
     ]).start();
+    Vibration.vibrate([0, 100, 50, 100]);
   }, []);
 
   if (!request) {
-    // Fallback if screen is opened without params
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>No request data found.</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-          <Text style={styles.linkText}>Go Home</Text>
-        </TouchableOpacity>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={64} color="#DC2626" />
+          <Text style={styles.errorText}>No request data found.</Text>
+          <TouchableOpacity style={styles.errorButton} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.errorButtonText}>Go Home</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
 
   const meta = TYPE_META[request.emergencyType] || TYPE_META.other;
 
+  const renderTypeIcon = () => {
+    const size = 28;
+    const color = meta.color;
+    if (meta.iconSet === 'fontawesome5') {
+      return <FontAwesome5 name={meta.icon as any} size={size} color={color} />;
+    }
+    return <Ionicons name={meta.icon as any} size={size} color={color} />;
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `🚨 Emergency Alert\n\nID: ${request.id}\nType: ${request.emergencyType.toUpperCase()}\nLocation: ${request.location.label}\nStatus: Pending\n\nSent via Emergency Response App`,
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Unable to share.');
+    }
+  };
+
+  const handleCallEmergency = () => {
+    Alert.alert(
+      'Emergency Call',
+      'Select emergency service:',
+      [
+        { text: 'Ambulance (1122)', onPress: () => Linking.openURL('tel:1122') },
+        { text: 'Police (15)', onPress: () => Linking.openURL('tel:15') },
+        { text: 'Fire (16)', onPress: () => Linking.openURL('tel:16') },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
         {/* Success Icon */}
         <Animated.View style={[styles.successIconWrap, { transform: [{ scale: scaleAnim }], opacity: fadeAnim }]}>
           <View style={styles.successCircle}>
-            <Text style={styles.successCheck}>✅</Text>
+            <Ionicons name="checkmark-circle" size={56} color="#22C55E" />
           </View>
         </Animated.View>
 
-        <Animated.View style={{ opacity: fadeAnim }}>
+        <Animated.View style={{ opacity: fadeAnim, width: '100%' }}>
           <Text style={styles.title}>Alert Dispatched!</Text>
           <Text style={styles.subtitle}>
             Your emergency request has been submitted. Help is on the way.
           </Text>
 
+          {/* Quick Actions */}
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity style={[styles.quickAction, styles.quickActionShare]} onPress={handleShare}>
+              <Ionicons name="share" size={22} color="#FFFFFF" />
+              <Text style={styles.quickActionText}>Share</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.quickAction, styles.quickActionCall]} onPress={handleCallEmergency}>
+              <Ionicons name="call" size={22} color="#FFFFFF" />
+              <Text style={styles.quickActionText}>Call</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Request ID Card */}
           <View style={styles.idCard}>
-            <Text style={styles.idLabel}>REQUEST ID</Text>
+            <Text style={styles.idLabel}>Request ID</Text>
             <Text style={styles.idValue}>{request.id.toUpperCase()}</Text>
+            <View style={styles.idBadge}>
+              <View style={styles.idDot} />
+              <Text style={styles.idBadgeText}>Pending Dispatch</Text>
+            </View>
           </View>
 
           {/* Details Card */}
           <View style={styles.detailsCard}>
-
             <View style={[styles.typeRow, { backgroundColor: meta.bgColor }]}>
-              <Text style={styles.typeIcon}>{meta.icon}</Text>
+              <View style={[styles.typeIconContainer, { backgroundColor: meta.color + '20' }]}>
+                {renderTypeIcon()}
+              </View>
               <Text style={[styles.typeText, { color: meta.color }]}>
-                {request.emergencyType.toUpperCase()} EMERGENCY
+                {request.emergencyType.toUpperCase()} Emergency
               </Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>📍</Text>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="location" size={18} color="#6B7280" />
+              </View>
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Location</Text>
                 <Text style={styles.detailValue}>{request.location.label}</Text>
@@ -108,7 +165,9 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>🕐</Text>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="time" size={18} color="#6B7280" />
+              </View>
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Submitted At</Text>
                 <Text style={styles.detailValue}>{formatDate(request.createdAt)}</Text>
@@ -116,18 +175,23 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>📊</Text>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="alert-circle" size={18} color="#6B7280" />
+              </View>
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Status</Text>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>⏳ PENDING — Awaiting dispatch</Text>
+                  <View style={styles.statusDot} />
+                  <Text style={styles.statusText}>Pending — Awaiting dispatch</Text>
                 </View>
               </View>
             </View>
 
             {request.notes ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailIcon}>📝</Text>
+                <View style={styles.detailIconContainer}>
+                  <Ionicons name="document-text" size={18} color="#6B7280" />
+                </View>
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Your Notes</Text>
                   <Text style={styles.detailValue}>{request.notes}</Text>
@@ -138,31 +202,74 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>
+            <Ionicons name="information-circle" size={20} color="#3B82F6" />
             <Text style={styles.infoBannerText}>
-              🔔 You will be notified when your request status changes. Keep your phone nearby.
+              You will be notified when your request status changes. Keep your phone nearby.
             </Text>
+          </View>
+
+          {/* What to Do Next */}
+          <View style={styles.whatsNextCard}>
+            <Text style={styles.whatsNextTitle}>What to Do Next</Text>
+            <View style={styles.whatsNextItem}>
+              <View style={styles.whatsNextNumber}>
+                <Text style={styles.whatsNextNumberText}>1</Text>
+              </View>
+              <Text style={styles.whatsNextText}>Stay calm and stay in a safe location</Text>
+            </View>
+            <View style={styles.whatsNextItem}>
+              <View style={styles.whatsNextNumber}>
+                <Text style={styles.whatsNextNumberText}>2</Text>
+              </View>
+              <Text style={styles.whatsNextText}>Keep your phone charged and nearby</Text>
+            </View>
+            <View style={styles.whatsNextItem}>
+              <View style={styles.whatsNextNumber}>
+                <Text style={styles.whatsNextNumberText}>3</Text>
+              </View>
+              <Text style={styles.whatsNextText}>Follow instructions from responders</Text>
+            </View>
+            <View style={styles.whatsNextItem}>
+              <View style={styles.whatsNextNumber}>
+                <Text style={styles.whatsNextNumberText}>4</Text>
+              </View>
+              <Text style={styles.whatsNextText}>Track responder location in real-time</Text>
+            </View>
           </View>
 
           {/* Action Buttons */}
           <TouchableOpacity
             style={styles.trackButton}
             onPress={() => navigation.navigate('Tracking', { requestId: request.id })}
+            activeOpacity={0.8}
           >
-            <Text style={styles.trackButtonText}>📡 View Live Tracking</Text>
+            <LinearGradient
+              colors={['#DC2626', '#B91C1C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.trackGradient}
+            >
+              <Ionicons name="navigate" size={22} color="#FFFFFF" />
+              <Text style={styles.trackButtonText}>View Live Tracking</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.historyButton}
             onPress={() => navigation.navigate('RequestHistory')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.historyButtonText}>📋 View Request History</Text>
+            <Ionicons name="time" size={22} color="#1F2937" />
+            <Text style={styles.historyButtonText}>View Request History</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.homeButton}
-            onPress={() => navigation.navigate('Main')}
+            onPress={() => navigation.navigate('Home')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.homeButtonText}>🏠 Back to Home</Text>
+            <Ionicons name="home" size={22} color="#6B7280" />
+            <Text style={styles.homeButtonText}>Back to Home</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -173,217 +280,384 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F5F5F5',
   },
   scrollContent: {
-    padding: spacing.xl,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
     alignItems: 'center',
   },
-  errorText: {
-    fontSize: fontSizes.lg,
-    color: colors.danger,
-    textAlign: 'center',
-    marginTop: 40,
+
+  // Error
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  linkText: {
-    fontSize: fontSizes.md,
-    color: colors.primary,
+  errorText: {
+    fontSize: 18,
+    color: '#DC2626',
     textAlign: 'center',
-    marginTop: spacing.lg,
+    marginTop: 16,
+  },
+  errorButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Success icon
   successIconWrap: {
-    marginTop: spacing.xxxl,
-    marginBottom: spacing.xl,
+    marginBottom: 16,
     alignItems: 'center',
   },
   successCircle: {
     width: 100,
     height: 100,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.successBg,
+    borderRadius: 50,
+    backgroundColor: '#F0FDF4',
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.lg,
-  },
-  successCheck: {
-    fontSize: 48,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 3,
+    borderColor: '#22C55E',
   },
 
   // Title
   title: {
-    fontSize: fontSizes.xxxl,
-    fontWeight: fontWeights.bold,
-    color: colors.success,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#22C55E',
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: fontSizes.md,
-    color: colors.textSecondary,
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 22,
-    paddingHorizontal: spacing.md,
+    marginBottom: 20,
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+
+  // Quick Actions
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 16,
+    gap: 10,
+  },
+  quickAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  quickActionShare: {
+    backgroundColor: '#8B5CF6',
+  },
+  quickActionCall: {
+    backgroundColor: '#DC2626',
+  },
+  quickActionText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // ID card
   idCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xxl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
     width: '100%',
-    marginBottom: spacing.xl,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   idLabel: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.bold,
-    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9CA3AF',
     letterSpacing: 2,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   idValue: {
-    fontSize: fontSizes.lg,
-    fontWeight: fontWeights.bold,
-    color: colors.textHeading,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
     letterSpacing: 1,
+  },
+  idBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 6,
+  },
+  idDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F59E0B',
+  },
+  idBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#F59E0B',
   },
 
   // Details card
   detailsCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
     width: '100%',
-    marginBottom: spacing.xl,
-    ...shadows.md,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   typeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: 16,
+    gap: 12,
   },
-  typeIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
+  typeIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   typeText: {
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.bold,
+    fontSize: 15,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: '#F3F4F6',
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: spacing.lg,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#F3F4F6',
   },
-  detailIcon: {
-    fontSize: 18,
-    marginRight: spacing.md,
-    marginTop: 2,
+  detailIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   detailContent: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.semibold,
-    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#9CA3AF',
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   detailValue: {
-    fontSize: fontSizes.md,
-    color: colors.textPrimary,
-    fontWeight: fontWeights.medium,
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '500',
   },
   detailSub: {
-    fontSize: fontSizes.xs,
-    color: colors.textSecondary,
+    fontSize: 11,
+    color: '#6B7280',
     marginTop: 2,
   },
   statusBadge: {
-    backgroundColor: colors.warningBg,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginTop: 2,
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F59E0B',
   },
   statusText: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.semibold,
-    color: colors.warning,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#F59E0B',
   },
 
   // Info banner
   infoBanner: {
-    //backgroundColor: colors.primaryBg,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 14,
     width: '100%',
-    marginBottom: spacing.xl,
+    marginBottom: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   infoBannerText: {
-    fontSize: fontSizes.sm,
-    color: colors.primary,
+    flex: 1,
+    fontSize: 12,
+    color: '#3B82F6',
     lineHeight: 18,
-    textAlign: 'center',
+  },
+
+  // What's Next
+  whatsNextCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  whatsNextTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  whatsNextItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+  },
+  whatsNextNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  whatsNextNumberText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  whatsNextText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#4B5563',
+    lineHeight: 18,
   },
 
   // Buttons
   trackButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
+    borderRadius: 12,
+    overflow: 'hidden',
     width: '100%',
+    marginBottom: 12,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  trackGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    ...shadows.primary,
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
   },
   trackButtonText: {
-    color: colors.textWhite,
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.semibold,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   historyButton: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    width: '100%',
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
+    borderColor: '#F3F4F6',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   historyButtonText: {
-    color: colors.textPrimary,
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.semibold,
+    color: '#1F2937',
+    fontSize: 15,
+    fontWeight: '600',
   },
   homeButton: {
-    paddingVertical: spacing.lg,
-    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    width: '100%',
+    gap: 10,
   },
   homeButtonText: {
-    color: colors.textSecondary,
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.medium,
+    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
+
+export default ConfirmationScreen;

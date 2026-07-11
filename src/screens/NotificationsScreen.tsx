@@ -39,6 +39,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -63,11 +64,12 @@ export const NotificationsScreen = ({ navigation }: any) => {
   }, []);
 
   const loadNotifications = () => {
+    setIsLoading(true);
     // Mock notifications data
     const mockNotifications: NotificationItem[] = [
       {
         id: '1',
-        title: '🚨 Emergency Alert',
+        title: 'Emergency Alert',
         message: 'Flood warning issued in your area. Please stay indoors and avoid flooded roads.',
         time: '2 min ago',
         read: false,
@@ -76,7 +78,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '2',
-        title: '📍 Location Shared',
+        title: 'Location Shared',
         message: 'Your location has been successfully shared with emergency contacts.',
         time: '15 min ago',
         read: false,
@@ -85,7 +87,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '3',
-        title: '🏥 Hospital Alert',
+        title: 'Hospital Alert',
         message: 'City General Hospital is currently at full capacity. Please consider alternative hospitals.',
         time: '1 hour ago',
         read: true,
@@ -94,7 +96,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '4',
-        title: '📋 Request Update',
+        title: 'Request Update',
         message: 'Your emergency request #1234 has been assigned to a responder.',
         time: '3 hours ago',
         read: true,
@@ -103,7 +105,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '5',
-        title: '💡 Safety Tip',
+        title: 'Safety Tip',
         message: 'Keep your emergency contacts updated. Review your emergency plan today.',
         time: '5 hours ago',
         read: true,
@@ -112,7 +114,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '6',
-        title: '🚨 Critical Alert',
+        title: 'Critical Alert',
         message: 'Severe weather warning: Heavy thunderstorms expected. Take precautions.',
         time: '2 hours ago',
         read: false,
@@ -121,7 +123,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '7',
-        title: '📱 App Update',
+        title: 'App Update',
         message: 'Emergency Response App v1.1.0 is now available. Update for new features.',
         time: '1 day ago',
         read: true,
@@ -130,7 +132,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       },
       {
         id: '8',
-        title: '📍 Emergency Contact Added',
+        title: 'Emergency Contact Added',
         message: 'Your emergency contact has been updated successfully.',
         time: '2 days ago',
         read: true,
@@ -142,6 +144,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
     setNotifications(mockNotifications);
     setFilteredNotifications(mockNotifications);
     updateUnreadCount(mockNotifications);
+    setIsLoading(false);
   };
 
   const updateUnreadCount = (items: NotificationItem[]) => {
@@ -169,7 +172,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
     // Show details
     Alert.alert(
       notification.title,
-      `${notification.message}\n\n📅 ${notification.time}\n📂 ${notification.category || 'General'}`,
+      `${notification.message}\n\nTime: ${notification.time}\nCategory: ${notification.category || 'General'}`,
       [
         { text: 'OK' },
         ...(notification.type === 'emergency' ? [
@@ -252,7 +255,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
     return notifications.filter(item => item.type === type).length;
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): any => {
     switch(type) {
       case 'emergency': return 'alert-circle';
       case 'alert': return 'warning';
@@ -262,7 +265,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type: string): string => {
     switch(type) {
       case 'emergency': return '#DC2626';
       case 'alert': return '#F59E0B';
@@ -270,10 +273,6 @@ export const NotificationsScreen = ({ navigation }: any) => {
       case 'info': return '#22C55E';
       default: return '#6B7280';
     }
-  };
-
-  const getTimeAgo = (time: string) => {
-    return time;
   };
 
   const renderNotificationItem = ({ item, index }: { item: NotificationItem; index: number }) => (
@@ -303,24 +302,24 @@ export const NotificationsScreen = ({ navigation }: any) => {
               <Ionicons name={getTypeIcon(item.type)} size={20} color={getTypeColor(item.type)} />
             </View>
             <View style={styles.notificationInfo}>
-              <Text style={styles.notificationTitle}>{item.title}</Text>
+              <View style={styles.notificationTitleRow}>
+                <Text style={styles.notificationTitle}>{item.title}</Text>
+                {!item.read && <View style={styles.unreadDot} />}
+              </View>
               <View style={styles.notificationMeta}>
                 <Text style={styles.notificationCategory}>{item.category}</Text>
                 <View style={styles.notificationDot} />
-                <Text style={styles.notificationTime}>{getTimeAgo(item.time)}</Text>
+                <Text style={styles.notificationTime}>{item.time}</Text>
               </View>
             </View>
           </View>
-          <View style={styles.notificationRight}>
-            {!item.read && <View style={styles.unreadDot} />}
-            <TouchableOpacity
-              onPress={() => handleDeleteSingle(item.id)}
-              activeOpacity={0.7}
-              style={styles.deleteButton}
-            >
-              <Ionicons name="close-circle" size={20} color="#D1D5DB" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => handleDeleteSingle(item.id)}
+            activeOpacity={0.7}
+            style={styles.deleteButton}
+          >
+            <Ionicons name="close" size={18} color="#D1D5DB" />
+          </TouchableOpacity>
         </View>
         <Text style={styles.notificationMessage} numberOfLines={2}>
           {item.message}
@@ -433,7 +432,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
               activeOpacity={0.7}
               style={styles.deleteAllButton}
             >
-              <Ionicons name="trash" size={18} color="#DC2626" />
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
               <Text style={styles.deleteAllText}>Clear All</Text>
             </TouchableOpacity>
           )}
@@ -521,7 +520,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerTitle: {
-    fontSize: isSmallDevice ? 18 : 20,
+    fontSize: isSmallDevice ? 16 : 18,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -571,7 +570,7 @@ const styles = StyleSheet.create({
     borderColor: '#DC2626',
   },
   filterChipText: {
-    fontSize: isSmallDevice ? 12 : 13,
+    fontSize: isSmallDevice ? 11 : 12,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -591,7 +590,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   notificationsCount: {
-    fontSize: isSmallDevice ? 12 : 13,
+    fontSize: isSmallDevice ? 11 : 12,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -601,7 +600,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   deleteAllText: {
-    fontSize: isSmallDevice ? 12 : 13,
+    fontSize: isSmallDevice ? 11 : 12,
     color: '#DC2626',
     fontWeight: '600',
   },
@@ -627,6 +626,11 @@ const styles = StyleSheet.create({
   notificationCardUnread: {
     borderLeftWidth: 4,
     borderLeftColor: '#DC2626',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   notificationTouchable: {
     padding: 14,
@@ -651,10 +655,16 @@ const styles = StyleSheet.create({
   notificationInfo: {
     flex: 1,
   },
+  notificationTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   notificationTitle: {
-    fontSize: isSmallDevice ? 14 : 15,
+    fontSize: isSmallDevice ? 13 : 14,
     fontWeight: '600',
     color: '#1F2937',
+    flex: 1,
   },
   notificationMeta: {
     flexDirection: 'row',
@@ -662,7 +672,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   notificationCategory: {
-    fontSize: isSmallDevice ? 10 : 11,
+    fontSize: isSmallDevice ? 9 : 10,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -674,27 +684,22 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   notificationTime: {
-    fontSize: isSmallDevice ? 10 : 11,
+    fontSize: isSmallDevice ? 9 : 10,
     color: '#9CA3AF',
-  },
-  notificationRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#DC2626',
-    marginRight: 8,
   },
   deleteButton: {
-    padding: 2,
+    padding: 4,
   },
   notificationMessage: {
-    fontSize: isSmallDevice ? 13 : 14,
+    fontSize: isSmallDevice ? 12 : 13,
     color: '#4B5563',
-    lineHeight: 20,
+    lineHeight: 18,
     marginTop: 6,
     marginLeft: 52,
   },
@@ -711,7 +716,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emergencyBadgeText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
     color: '#DC2626',
   },
@@ -734,6 +739,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 4,
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
   resetFilterButton: {
     backgroundColor: '#DC2626',

@@ -162,7 +162,6 @@ export const HomeScreen = ({ navigation }: any) => {
   const recordingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // SOS Pulse Animation - slightly zoom in and out
     Animated.loop(
       Animated.sequence([
         Animated.timing(sosScale, { 
@@ -234,7 +233,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Sidebar functions
   const openSidebar = () => {
     setSidebarVisible(true);
     Animated.parallel([
@@ -276,7 +274,6 @@ export const HomeScreen = ({ navigation }: any) => {
     );
   };
 
-  // SOS Functions
   const handleSOSPressIn = () => {
     Animated.timing(sosScale, { 
       toValue: 0.85, 
@@ -296,7 +293,6 @@ export const HomeScreen = ({ navigation }: any) => {
     navigation.navigate('SOS');
   };
 
-  // Emergency Service Modal
   const openServiceModal = (service: ServiceItem) => {
     setSelectedService(service);
     setServiceModalVisible(true);
@@ -308,7 +304,6 @@ export const HomeScreen = ({ navigation }: any) => {
     setSelectedService(null);
   };
 
-  // Medical Profile Modal
   const openMedicalModal = () => {
     setTempMedicalProfile({ ...medicalProfile });
     setMedicalModalVisible(true);
@@ -326,7 +321,6 @@ export const HomeScreen = ({ navigation }: any) => {
     Alert.alert('Profile Saved', 'Your medical profile has been updated successfully.');
   };
 
-  // Location Sharing
   const handleLocationToggle = async (value: boolean) => {
     if (value) {
       try {
@@ -384,7 +378,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Siren
   const playSiren = async () => {
     if (sirenActive) {
       setSirenActive(false);
@@ -428,7 +421,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Audio Recording
   const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
@@ -511,7 +503,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Torch
   const handleTorchToggle = async () => {
     try {
       setTorchActive(!torchActive);
@@ -521,7 +512,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Search functionality
   const openSearch = () => {
     setSearchModalVisible(true);
     setSearchQuery('');
@@ -594,7 +584,6 @@ export const HomeScreen = ({ navigation }: any) => {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
 
-  // Share App
   const shareApp = async () => {
     try {
       await Share.share({
@@ -605,7 +594,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Toggle Medical Card
   const toggleMedicalCard = () => {
     setIsMedicalCardVisible(!isMedicalCardVisible);
     Animated.spring(medicalCardAnim, {
@@ -616,7 +604,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }).start();
   };
 
-  // Sidebar Menu Items
   const sidebarMenuItems: SidebarMenuItem[] = [
     { id: 'dashboard', label: 'Dashboard', screen: 'Home', icon: 'grid' },
     { id: 'sos', label: 'SOS Alert', screen: 'SOS', icon: 'alert-circle' },
@@ -631,7 +618,6 @@ export const HomeScreen = ({ navigation }: any) => {
     { id: 'share', label: 'Share App', screen: null, icon: 'share' },
   ];
 
-  // Handler for sidebar items
   const handleSidebarAction = (item: SidebarMenuItem) => {
     closeSidebar();
     
@@ -645,7 +631,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await loadMedicalProfile();
@@ -655,7 +640,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }, 1000);
   };
 
-  // Emergency Services with detailed info
   const emergencyServices: ServiceItem[] = [
     { 
       id: 'ambulance',
@@ -719,7 +703,6 @@ export const HomeScreen = ({ navigation }: any) => {
     },
   ];
 
-  // Get service modal content
   const getServiceModalContent = (service: ServiceItem) => {
     switch(service.id) {
       case 'ambulance':
@@ -782,7 +765,6 @@ export const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  // Render service icon
   const renderServiceIcon = (service: ServiceItem) => {
     const size = 22;
     const color = service.color;
@@ -793,7 +775,6 @@ export const HomeScreen = ({ navigation }: any) => {
     return <Ionicons name={service.icon as any} size={size} color={color} />;
   };
 
-  // Quick Actions
   const quickActions: QuickActionItem[] = [
     { 
       id: 'instant_help', 
@@ -829,7 +810,6 @@ export const HomeScreen = ({ navigation }: any) => {
     },
   ];
 
-  // Safety Tools
   const safetyTools: SafetyToolItem[] = [
     { 
       id: 'share_location',
@@ -871,7 +851,6 @@ export const HomeScreen = ({ navigation }: any) => {
     },
   ];
 
-  // Checklist functions
   const toggleChecklistItem = (id: string) => {
     const updated = checklistItems.map(item => 
       item.id === id ? { ...item, checked: !item.checked } : item
@@ -916,7 +895,6 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
-        {/* User Profile Card in Header */}
         <TouchableOpacity 
           style={styles.userProfileCard}
           onPress={() => navigation.navigate('Profile')}
@@ -1388,7 +1366,7 @@ export const HomeScreen = ({ navigation }: any) => {
           {quickActions.map((action) => (
             <TouchableOpacity 
               key={action.id}
-              style={[styles.quickActionCard, { borderTopColor: action.color, borderTopWidth: 3 }]}
+              style={[styles.quickActionCard, styles.quickActionCardShadow, { borderTopColor: action.color, borderTopWidth: 3 }]}
               onPress={action.onPress}
               activeOpacity={0.8}
             >
@@ -1405,7 +1383,7 @@ export const HomeScreen = ({ navigation }: any) => {
           {emergencyServices.map((service, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.serviceCard, { borderLeftColor: service.color, borderLeftWidth: 4 }]}
+              style={[styles.serviceCard, styles.serviceCardShadow, { borderLeftColor: service.color, borderLeftWidth: 4 }]}
               onPress={() => openServiceModal(service)}
               activeOpacity={0.8}
             >
@@ -1429,7 +1407,7 @@ export const HomeScreen = ({ navigation }: any) => {
           {safetyTools.map((tool) => (
             <TouchableOpacity
               key={tool.id}
-              style={[styles.safetyToolCard, { borderTopColor: tool.color, borderTopWidth: 3 }]}
+              style={[styles.safetyToolCard, styles.safetyToolCardShadow, { borderTopColor: tool.color, borderTopWidth: 3 }]}
               onPress={tool.onPress}
               activeOpacity={0.8}
             >
@@ -1443,7 +1421,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Medical Profile */}
         <Text style={styles.sectionTitle}>Medical Profile</Text>
         <TouchableOpacity 
-          style={styles.medicalHeaderCard}
+          style={[styles.medicalHeaderCard, styles.medicalHeaderCardShadow]}
           onPress={toggleMedicalCard}
           activeOpacity={0.8}
         >
@@ -1458,6 +1436,7 @@ export const HomeScreen = ({ navigation }: any) => {
           <Animated.View 
             style={[
               styles.medicalCard,
+              styles.medicalCardShadow,
               {
                 opacity: medicalCardAnim,
                 transform: [{ scale: medicalCardAnim }],
@@ -1527,7 +1506,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Local Alerts */}
         <Text style={styles.sectionTitle}>Local Alerts</Text>
         
-        <View style={styles.alertCard}>
+        <View style={[styles.alertCard, styles.alertCardShadow]}>
           <View style={styles.alertHeader}>
             <View style={styles.alertBadgeContainer}>
               <View style={[styles.alertBadge, styles.alertBadgeCritical]}>
@@ -1544,7 +1523,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.alertCard, styles.alertCardWarning]}>
+        <View style={[styles.alertCard, styles.alertCardWarning, styles.alertCardShadow]}>
           <View style={styles.alertHeader}>
             <View style={styles.alertBadgeContainer}>
               <View style={[styles.alertBadge, styles.alertBadgeWarning]}>
@@ -1563,7 +1542,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
         {/* Safety Tip */}
         <Text style={styles.sectionTitle}>Safety Tip</Text>
-        <View style={styles.tipCard}>
+        <View style={[styles.tipCard, styles.tipCardShadow]}>
           <View style={styles.tipHeader}>
             <Ionicons name="bulb" size={22} color="#D97706" />
             <Text style={styles.tipTitle}>Tip of the Day</Text>
@@ -1805,6 +1784,64 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
 
+  // Shadow Styles - RED SHADOWS for all white cards
+  metricCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  quickActionCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  serviceCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  safetyToolCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  medicalHeaderCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  medicalCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  alertCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  tipCardShadow: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
   // Metrics
   metricGrid: {
     flexDirection: 'row',
@@ -1820,13 +1857,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#F3F4F6',
-  },
-  metricCardShadow: {
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   metricIconContainer: {
     width: 36,
