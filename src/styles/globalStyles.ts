@@ -1,6 +1,6 @@
 // src/styles/globalStyles.ts
 import { StyleSheet } from 'react-native';
-import { colors, spacing, borderRadius, typography, shadows } from './theme';
+import { borderRadius, colors, shadows, spacing, typography } from './theme';
 
 export const globalStyles = StyleSheet.create({
   container: {

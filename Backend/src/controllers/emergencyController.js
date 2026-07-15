@@ -4,6 +4,7 @@
 //updateEmergencyStatus API
 
 const EmergencyRequest = require("../models/EmergencyRequest");
+const Hospital = require("../models/hospital");
 // Create Emergency Request
 const createEmergencyRequest = async (req, res) => {
   try {
@@ -159,12 +160,69 @@ const updateEmergencyStatus = async (req, res) => {
     });
 
   }
-
 };
+  const selectHospital = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { hospitalId } = req.body;
+
+    if (!hospitalId) {
+      return res.status(400).json({
+        success: false,
+        message: "Hospital ID is required.",
+      });
+    }
+
+    // Check emergency request
+    const emergencyRequest = await EmergencyRequest.findById(id);
+
+    if (!emergencyRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Emergency request not found.",
+      });
+    }
+
+    // Check hospital
+    const hospital = await Hospital.findById(hospitalId);
+
+    if (!hospital) {
+      return res.status(404).json({
+        success: false,
+        message: "Hospital not found.",
+      });
+    }
+
+    // Save selected hospital
+    emergencyRequest.hospitalId = hospitalId;
+
+    await emergencyRequest.save();
+
+    // Return updated request with hospital details
+    const updatedRequest = await EmergencyRequest.findById(id)
+      .populate("hospitalId", "name address phone isAvailable");
+
+    return res.status(200).json({
+      success: true,
+      message: "Hospital selected successfully.",
+      data: updatedRequest,
+    });
+
+  } catch (error) {
+    console.error("Select Hospital Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to select hospital.",
+    });
+  }
+};
+
 module.exports = {
   createEmergencyRequest,
   getMyEmergencyRequests,
   getEmergencyRequestById,
   updateEmergencyStatus,
   getEmergencyLocation,
+  selectHospital,
 };

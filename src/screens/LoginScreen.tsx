@@ -1,9 +1,12 @@
 // src/screens/LoginScreen.tsx
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Animated,
   Dimensions,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,11 +16,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Animated,
   Vibration,
-  Easing,
-  Alert,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   logo: {
     width: '99%',
     height: '99%',
-    borderRadius: '60%',
+    borderRadius: 60,
   },
   title: {
     fontSize: isSmallDevice ? 24 : 28,

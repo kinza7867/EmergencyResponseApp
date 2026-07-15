@@ -39,6 +39,11 @@ const emergencyRequestSchema = new mongoose.Schema(
     required: true,
   },
 },
+hospitalId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Hospital",
+    default: null,
+},
 
     status: {
       type: String,
@@ -52,6 +57,7 @@ const emergencyRequestSchema = new mongoose.Schema(
       default: "pending",
     },
   },
+  
   {
     timestamps: true,
   }

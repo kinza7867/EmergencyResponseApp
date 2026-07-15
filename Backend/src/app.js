@@ -4,7 +4,10 @@ const morgan = require("morgan");
 
 const authRoutes = require("./routes/authRoutes");
 const emergencyRoutes = require("./routes/emergencyRoutes");
+const hospitalRoutes = require("./routes/hospitalRoutes");
 const app = express();
+
+app.use("/api/hospitals", hospitalRoutes);
 
 // Middleware
 app.use(cors());

@@ -1,27 +1,29 @@
 // src/screens/HospitalSelectionScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  Image,
+  ActivityIndicator,
   Alert,
-  Vibration,
   Animated,
-  StatusBar,
-  TextInput,
+  Dimensions,
   FlatList,
+  Image,
   Linking,
   Platform,
   RefreshControl,
-  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import { getNearbyHospitals } from "../services/hospitalService";
+
 
 const LOGO = require('../../assets/logo.png');
 const { width, height } = Dimensions.get('window');
@@ -31,13 +33,13 @@ interface Hospital {
   id: string;
   name: string;
   address: string;
-  distance: string;
   phone: string;
+  latitude: number;
+  longitude: number;
+  distance: string;
+  emergency: boolean;
   rating: number;
   type: string;
-  emergency: boolean;
-  latitude?: number;
-  longitude?: number;
 }
 
 export const HospitalSelectionScreen = ({ navigation }: any) => {
@@ -55,23 +57,22 @@ export const HospitalSelectionScreen = ({ navigation }: any) => {
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  Animated.parallel([
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }),
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    getUserLocation();
-    loadHospitals();
-  }, []);
+  getUserLocation();
+}, []);
 
   const getUserLocation = async () => {
     try {
@@ -85,86 +86,70 @@ export const HospitalSelectionScreen = ({ navigation }: any) => {
         accuracy: Location.Accuracy.High,
       });
       
-      setUserLocation({
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
+     const currentLocation = {
+  lat: location.coords.latitude,
+  lng: location.coords.longitude,
+};
+
+setUserLocation(currentLocation);
+
+// Load hospitals immediately after getting location
+loadHospitals(currentLocation);
+
     } catch (error) {
       console.log('Location error:', error);
       setLocationError('Unable to get location');
     }
   };
 
-  const loadHospitals = () => {
-    // Mock hospital data
-    const mockHospitals: Hospital[] = [
-      {
-        id: '1',
-        name: 'City General Hospital',
-        address: '123 Main Street, City Center',
-        distance: '1.2 km',
-        phone: '+92-42-1234567',
-        rating: 4.8,
-        type: 'General',
-        emergency: true,
-      },
-      {
-        id: '2',
-        name: 'National Emergency Center',
-        address: '456 Emergency Road, Sector B',
-        distance: '2.5 km',
-        phone: '+92-42-7654321',
-        rating: 4.9,
-        type: 'Emergency',
-        emergency: true,
-      },
-      {
-        id: '3',
-        name: 'City Children\'s Hospital',
-        address: '789 Pediatric Lane, Sector C',
-        distance: '3.8 km',
-        phone: '+92-42-9876543',
-        rating: 4.7,
-        type: 'Pediatric',
-        emergency: true,
-      },
-      {
-        id: '4',
-        name: 'Heart Institute',
-        address: '101 Cardiac Avenue, Sector D',
-        distance: '4.2 km',
-        phone: '+92-42-4567890',
-        rating: 4.9,
-        type: 'Cardiac',
-        emergency: true,
-      },
-      {
-        id: '5',
-        name: 'City Maternity Hospital',
-        address: '202 Motherhood Street, Sector E',
-        distance: '5.0 km',
-        phone: '+92-42-3456789',
-        rating: 4.6,
-        type: 'Maternity',
-        emergency: false,
-      },
-      {
-        id: '6',
-        name: 'Emergency Trauma Center',
-        address: '303 Trauma Road, Sector F',
-        distance: '1.8 km',
-        phone: '+92-42-2345678',
-        rating: 4.8,
-        type: 'Trauma',
-        emergency: true,
-      },
-    ];
+ 
+    const loadHospitals = async (
+  location?: { lat: number; lng: number }
+) => {
+  try {
+    setLoading(true);
 
-    setHospitals(mockHospitals);
-    setFilteredHospitals(mockHospitals);
+    const currentLocation = location || userLocation;
+
+    if (!currentLocation) {
+      return;
+    }
+
+    const response = await getNearbyHospitals(
+      currentLocation.lat,
+      currentLocation.lng
+    );
+
+    if (response.success) {
+      const hospitals = response.data.map((item: any) => ({
+        id: item._id,
+        name: item.name,
+        address: item.address,
+        phone: item.phone,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        distance: `${item.distance} km`,
+        emergency: item.isAvailable,
+        rating: 4.8,
+        type: "General",
+      }));
+
+      setHospitals(hospitals);
+      setFilteredHospitals(hospitals);
+    }
+
+  } catch (error) {
+    console.log("Hospital Error:", error);
+
+    Alert.alert(
+      "Error",
+      "Unable to load nearby hospitals."
+    );
+
+  } finally {
     setLoading(false);
-  };
-
+  }
+};
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     filterHospitals(query, selectedFilter);
