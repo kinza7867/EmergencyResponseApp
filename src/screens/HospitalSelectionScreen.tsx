@@ -115,10 +115,17 @@ loadHospitals(currentLocation);
       return;
     }
 
-    const response = await getNearbyHospitals(
-      currentLocation.lat,
-      currentLocation.lng
-    );
+   const response = await getNearbyHospitals(
+  currentLocation.lat,
+  currentLocation.lng
+);
+
+console.log("========== API RESPONSE ==========");
+console.log(JSON.stringify(response, null, 2));
+console.log("==================================");
+
+console.log("Response Success:", response.success);
+console.log("Hospital Count:", response.data?.length);
 
     if (response.success) {
       const hospitals = response.data.map((item: any) => ({

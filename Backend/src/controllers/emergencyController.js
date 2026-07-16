@@ -7,6 +7,10 @@ const EmergencyRequest = require("../models/EmergencyRequest");
 const Hospital = require("../models/hospital");
 // Create Emergency Request
 const createEmergencyRequest = async (req, res) => {
+
+    console.log("===== CREATE EMERGENCY API =====");
+  console.log(req.body);
+
   try {
     const { emergencyType, notes, location } = req.body;
 

@@ -35,6 +35,8 @@ const getHospitals = async (req, res) => {
     const userLng = parseFloat(lng);
 
     const hospitals = await Hospital.find();
+    console.log("Hospitals found:", hospitals.length);
+console.log(hospitals);
 
     const hospitalsWithDistance = hospitals.map((hospital) => {
       const distance = calculateDistance(

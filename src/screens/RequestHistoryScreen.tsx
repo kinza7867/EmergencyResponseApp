@@ -5,27 +5,42 @@
 // and a search bar. Tapping a row shows a bottom-sheet detail modal.
 // Loading state and empty state are both handled.
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  ScrollView,
   ActivityIndicator,
   Alert,
-  StatusBar,
   Dimensions,
-  Platform,
+  FlatList,
   Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { emergencyService, EmergencyRequest } from '../services/emergencyService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import {
+  getMyEmergencyRequests,
+  updateEmergencyStatus,
+} from "../services/emergencyService";
+
+interface EmergencyRequest {
+  _id: string;
+  emergencyType: string;
+  notes: string;
+  location: {
+    label: string;
+    latitude: number;
+    longitude: number;
+  };
+  status: string;
+  createdAt: string;
+}
 
 const LOGO = require('../../assets/logo.png');
 const { height, width } = Dimensions.get('window');
@@ -80,38 +95,26 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
   const [userId, setUserId]                   = useState('');
 
   // Load user ID then fetch history
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('userData');
-        if (raw) {
-          const user = JSON.parse(raw);
-          const id = user.id || 'user-1';
-          const name = user.name || 'User';
-          setUserId(id);
-          await emergencyService.seedMockHistory(id, name);
-          await fetchHistory(id);
-        }
-      } catch {
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+ useEffect(() => {
+  fetchHistory();
+}, []);
 
-  const fetchHistory = async (uid: string) => {
-    setLoading(true);
-    try {
-      const response = await emergencyService.getByUser(uid);
-      const requests = response.data.requests;
-      setAllRequests(requests);
-      applyFilter(requests, activeFilter, searchQuery);
-    } catch (error: any) {
-      Alert.alert('Error', 'Could not load history. Please try again.');
-    } finally {
-      setLoading(false);
+  const fetchHistory = async () => {
+  setLoading(true);
+
+  try {
+    const response = await getMyEmergencyRequests();
+
+    if (response.success) {
+      setAllRequests(response.data);
+      applyFilter(response.data, activeFilter, searchQuery);
     }
-  };
+  } catch (error) {
+    Alert.alert("Error", "Unable to load history.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const applyFilter = useCallback(
     (requests: EmergencyRequest[], filter: string, query: string) => {
@@ -158,9 +161,9 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
           text: 'Yes, Cancel',
           style: 'destructive',
           onPress: async () => {
-            await emergencyService.cancelRequest(item.id);
+            await updateEmergencyStatus(item._id, "cancelled");
             setModalVisible(false);
-            await fetchHistory(userId);
+            await fetchHistory();
           },
         },
       ]
@@ -203,7 +206,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
         ) : null}
 
         <View style={styles.cardFooter}>
-          <Text style={styles.requestId}>#{item.id.slice(0, 12).toUpperCase()}</Text>
+          <Text style={styles.requestId}>#{item._id.slice(0, 12).toUpperCase()}</Text>
           <Text style={styles.viewMore}>View Details →</Text>
         </View>
       </TouchableOpacity>
@@ -266,7 +269,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
             <Text style={styles.headerTitle}>Request History</Text>
           </View>
 
-          <TouchableOpacity onPress={() => userId && fetchHistory(userId)} style={styles.refreshButton}>
+          <TouchableOpacity onPress={() => userId && fetchHistory()} style={styles.refreshButton}>
             <Text style={styles.refreshText}>↻</Text>
           </TouchableOpacity>
         </View>
@@ -324,7 +327,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item._id}
           renderItem={renderItem}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={[styles.listContent, filtered.length === 0 && styles.listEmpty]}
@@ -372,7 +375,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
                           {statusMeta.icon} {selectedItem.status.toUpperCase()}
                         </Text>
                       </View>
-                      <Text style={styles.modalId}>#{selectedItem.id.slice(0, 12).toUpperCase()}</Text>
+                      <Text style={styles.modalId}>#{selectedItem._id.slice(0, 12).toUpperCase()}</Text>
                     </View>
 
                     {[
@@ -397,7 +400,7 @@ export const RequestHistoryScreen = ({ navigation }: any) => {
                         style={styles.trackingBtn}
                         onPress={() => {
                           setModalVisible(false);
-                          navigation.navigate('Tracking', { requestId: selectedItem.id });
+                          navigation.navigate('Tracking', { requestId: selectedItem._id });
                         }}
                       >
                         <Text style={styles.trackingBtnText}>📡 View Tracking</Text>

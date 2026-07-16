@@ -1,26 +1,26 @@
 // src/screens/SOSScreen.tsx
-import React, { useState, useEffect } from 'react';
+import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Alert,
   ActivityIndicator,
-  StatusBar,
+  Alert,
   Dimensions,
   KeyboardAvoidingView,
-  Platform,
-  Vibration,
   Linking,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { emergencyService } from '../services/emergencyService';
+import { createEmergencyRequest } from "../services/emergencyService";
 
 const { width, height } = Dimensions.get('window');
 const isSmallDevice = width < 380;
@@ -200,31 +200,42 @@ export const SOSScreen = ({ navigation }: any) => {
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-    setLoading(true);
-    try {
-      const response = await emergencyService.submitRequest({
-        userId,
-        userName,
-        emergencyType: selectedType,
-        notes: notes.trim(),
-        location,
+ const handleSubmit = async () => {
+
+   //console.log("Submit button pressed");
+  if (!validateForm()) return;
+
+  setLoading(true);
+
+  try {
+   const response = await createEmergencyRequest({
+  emergencyType: selectedType,
+  notes: notes.trim(),
+  location,
+});
+
+console.log("API RESPONSE =", JSON.stringify(response, null, 2));
+    if (response.success) {
+      navigation.navigate("Confirmation", {
+        request: response.data,
       });
-      if (response.success) {
-        navigation.navigate('Confirmation', { request: response.data.request });
-        setSelectedType('');
-        setNotes('');
-      }
-    } catch (error: any) {
-      Alert.alert(
-        'Submission Failed',
-        error.message || 'Could not submit SOS. Please try again.'
-      );
-    } finally {
-      setLoading(false);
+
+      setSelectedType("");
+      setNotes("");
     }
-  };
+  } catch (error: any) {
+    console.log(error.response?.data || error);
+
+    Alert.alert(
+      "Submission Failed",
+      error.response?.data?.message ||
+      error.message ||
+      "Could not submit emergency request."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const selectedTypeObj = EMERGENCY_TYPES.find((t) => t.key === selectedType);
 

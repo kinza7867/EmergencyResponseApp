@@ -1,23 +1,21 @@
 // src/screens/ConfirmationScreen.tsx
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  ScrollView,
-  StatusBar,
-  Platform,
-  Share,
-  Linking,
   Alert,
+  Animated,
+  Linking,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
   Vibration,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { EmergencyRequest } from '../services/emergencyService';
 
 const TYPE_META: Record<string, { icon: string; iconSet: 'ionicons' | 'fontawesome5'; color: string; bgColor: string }> = {
   medical:  { icon: 'medical', iconSet: 'ionicons', color: '#DC2626', bgColor: '#FEF2F2' },
@@ -38,7 +36,8 @@ const formatDate = (iso: string) =>
   });
 
 export const ConfirmationScreen = ({ route, navigation }: any) => {
-  const request: EmergencyRequest = route.params?.request;
+  const request = route.params.request;
+console.log("REQUEST =", JSON.stringify(request, null, 2));
 
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -131,7 +130,9 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
           {/* Request ID Card */}
           <View style={styles.idCard}>
             <Text style={styles.idLabel}>Request ID</Text>
-            <Text style={styles.idValue}>{request.id.toUpperCase()}</Text>
+           <Text style={styles.idValue}>
+  {(request._id || request.id || "N/A").toString().toUpperCase()}
+</Text>
             <View style={styles.idBadge}>
               <View style={styles.idDot} />
               <Text style={styles.idBadgeText}>Pending Dispatch</Text>
@@ -145,8 +146,8 @@ export const ConfirmationScreen = ({ route, navigation }: any) => {
                 {renderTypeIcon()}
               </View>
               <Text style={[styles.typeText, { color: meta.color }]}>
-                {request.emergencyType.toUpperCase()} Emergency
-              </Text>
+  {(request.emergencyType || "Unknown").toUpperCase()} Emergency
+</Text>
             </View>
 
             <View style={styles.divider} />
