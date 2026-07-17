@@ -1,34 +1,38 @@
 // src/screens/EmergencyContactsScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  Image,
   Alert,
-  Vibration,
   Animated,
-  StatusBar,
-  RefreshControl,
+  Dimensions,
   FlatList,
-  Platform,
-  TextInput,
+  Image,
   Linking,
   Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  addEmergencyContact,
+  deleteEmergencyContact,
+  getEmergencyContacts
+} from "../services/emergencyContactService";
 
 const LOGO = require('../../assets/logo.png');
 const { width, height } = Dimensions.get('window');
 const isSmallDevice = width < 380;
 
 interface EmergencyContact {
-  id: string;
+  _id: string;
   name: string;
   phone: string;
   relationship: string;
@@ -46,6 +50,7 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
   // Modal states
   const [modalVisible, setModalVisible] = useState(false);
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -75,68 +80,28 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
     loadContacts();
   }, []);
 
-  const loadContacts = async () => {
-    try {
-      const saved = await AsyncStorage.getItem('emergencyContacts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setContacts(parsed);
-        setFilteredContacts(parsed);
-      } else {
-        // Mock data for first time
-        const mockContacts: EmergencyContact[] = [
-          {
-            id: '1',
-            name: 'Ahmed Khan',
-            phone: '+92-300-1234567',
-            relationship: 'Brother',
-            isEmergency: true,
-          },
-          {
-            id: '2',
-            name: 'Sarah Ahmed',
-            phone: '+92-300-7654321',
-            relationship: 'Mother',
-            isEmergency: true,
-          },
-          {
-            id: '3',
-            name: 'Dr. Usman Ali',
-            phone: '+92-300-9876543',
-            relationship: 'Doctor',
-            isEmergency: false,
-          },
-          {
-            id: '4',
-            name: 'Fatima Noor',
-            phone: '+92-300-4567890',
-            relationship: 'Sister',
-            isEmergency: true,
-          },
-          {
-            id: '5',
-            name: 'Omar Hassan',
-            phone: '+92-300-2345678',
-            relationship: 'Friend',
-            isEmergency: false,
-          },
-        ];
-        setContacts(mockContacts);
-        setFilteredContacts(mockContacts);
-        await AsyncStorage.setItem('emergencyContacts', JSON.stringify(mockContacts));
-      }
-    } catch (error) {
-      console.log('Error loading contacts:', error);
-    }
-  };
+ const loadContacts = async () => {
+  try {
+    setLoading(true);
 
-  const saveContacts = async (updatedContacts: EmergencyContact[]) => {
-    try {
-      await AsyncStorage.setItem('emergencyContacts', JSON.stringify(updatedContacts));
-    } catch (error) {
-      console.log('Error saving contacts:', error);
+    const response = await getEmergencyContacts();
+
+    if (response.success) {
+      setContacts(response.data);
     }
-  };
+
+  } catch (error) {
+    console.log(error)
+
+    Alert.alert(
+      "Error",
+      "Unable to load emergency contacts."
+    );
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -184,7 +149,46 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
     setModalVisible(true);
     Vibration.vibrate(20);
   };
+const handleSaveContact = async () => {
+  if (
+    !formData.name.trim() ||
+    !formData.phone.trim() ||
+    !formData.relationship.trim()
+  ) {
+    Alert.alert("Error", "Please fill in all fields.");
+    return;
+  }
 
+  try {
+    const response = await addEmergencyContact({
+      name: formData.name,
+      phone: formData.phone,
+      relationship: formData.relationship,
+    });
+
+    if (response.success) {
+      Alert.alert("Success", "Emergency contact added successfully.");
+
+      setModalVisible(false);
+
+      setFormData({
+        name: "",
+        phone: "",
+        relationship: "",
+        isEmergency: false,
+      });
+
+      loadContacts();
+    }
+  } catch (error) {
+    console.log(error);
+
+    Alert.alert(
+      "Error",
+      "Unable to add emergency contact."
+    );
+  }
+};
   const handleEditContact = (contact: EmergencyContact) => {
     setEditingContact(contact);
     setFormData({
@@ -197,73 +201,26 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
     Vibration.vibrate(20);
   };
 
-  const handleDeleteContact = (contact: EmergencyContact) => {
-    Vibration.vibrate(30);
+  const handleDelete = async (id: string) => {
+  try {
+    await deleteEmergencyContact(id);
+
     Alert.alert(
-      'Delete Contact',
-      `Are you sure you want to delete ${contact.name} from your emergency contacts?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const updated = contacts.filter(c => c.id !== contact.id);
-            setContacts(updated);
-            setFilteredContacts(updated);
-            await saveContacts(updated);
-            Alert.alert('Success', 'Contact deleted successfully.');
-          }
-        }
-      ]
+      "Success",
+      "Contact deleted successfully."
     );
-  };
 
-  const handleSaveContact = async () => {
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.relationship.trim()) {
-      Alert.alert('Error', 'Please fill in all fields.');
-      return;
-    }
+    loadContacts();
 
-    Vibration.vibrate(20);
+  } catch (error) {
+    console.log(error);
 
-    let updatedContacts: EmergencyContact[];
-    
-    if (editingContact) {
-      // Edit existing contact
-      updatedContacts = contacts.map(c =>
-        c.id === editingContact.id
-          ? {
-              ...c,
-              name: formData.name,
-              phone: formData.phone,
-              relationship: formData.relationship,
-              isEmergency: formData.isEmergency,
-            }
-          : c
-      );
-    } else {
-      // Add new contact
-      const newContact: EmergencyContact = {
-        id: Date.now().toString(),
-        name: formData.name,
-        phone: formData.phone,
-        relationship: formData.relationship,
-        isEmergency: formData.isEmergency,
-      };
-      updatedContacts = [...contacts, newContact];
-    }
-
-    setContacts(updatedContacts);
-    setFilteredContacts(updatedContacts);
-    await saveContacts(updatedContacts);
-    setModalVisible(false);
-    
     Alert.alert(
-      'Success',
-      editingContact ? 'Contact updated successfully.' : 'Contact added successfully.'
+      "Error",
+      "Unable to delete contact."
     );
-  };
+  }
+};
 
   const handleMakeEmergencyCall = (phone: string) => {
     Vibration.vibrate(30);
@@ -350,7 +307,7 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDeleteContact(item)}
+            onPress={() => handleDelete(item._id)}
             activeOpacity={0.7}
           >
             <Ionicons name="trash-outline" size={18} color="#DC2626" />
@@ -493,7 +450,7 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
         {filteredContacts.length > 0 ? (
           <FlatList
             data={filteredContacts}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id}
             renderItem={renderContactItem}
             contentContainerStyle={styles.listContent}
             refreshControl={
@@ -614,23 +571,22 @@ export const EmergencyContactsScreen = ({ navigation }: any) => {
                   </View>
                 )}
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalSaveButton}
-                onPress={handleSaveContact}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={['#DC2626', '#B91C1C']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.modalSaveGradient}
-                >
-                  <Text style={styles.modalSaveButtonText}>
-                    {editingContact ? 'Update Contact' : 'Add Contact'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+               <TouchableOpacity
+  style={styles.modalSaveButton}
+  onPress={handleSaveContact}
+  activeOpacity={0.7}
+>
+  <LinearGradient
+    colors={['#DC2626', '#B91C1C']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 0 }}
+    style={styles.modalSaveGradient}
+  >
+    <Text style={styles.modalSaveButtonText}>
+      {editingContact ? 'Update Contact' : 'Add Contact'}
+    </Text>
+  </LinearGradient>
+</TouchableOpacity>
             </ScrollView>
           </View>
         </View>

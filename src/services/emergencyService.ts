@@ -4,7 +4,7 @@ export const createEmergencyRequest = async (data: {
   emergencyType: string;
   notes: string;
   location: {
-     label: string;
+    label: string;
     latitude: number;
     longitude: number;
   };

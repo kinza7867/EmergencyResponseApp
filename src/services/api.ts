@@ -14,6 +14,10 @@ api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem("authToken");
 
+   console.log("BASE URL:", config.baseURL);
+console.log("ENDPOINT:", config.url);
+    console.log("TOKEN:", token);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -13,6 +13,7 @@ const {
   updateEmergencyStatus,
   getEmergencyLocation,
   selectHospital,
+  notifyEmergencyContacts,
 } = require("../controllers/emergencyController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -58,5 +59,10 @@ router.patch(
   "/:id/hospital",
   protect,
   selectHospital
+);
+router.post(
+  "/:id/notify",
+  protect,
+  notifyEmergencyContacts
 );
 module.exports = router;

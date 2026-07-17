@@ -1,32 +1,32 @@
 // src/navigation/MainNavigator.tsx
-import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 
 // Main Tab Screens
+import { HistoryScreen } from '../screens/HistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { HistoryScreen } from '../screens/HistoryScreen';
 
 // Other Screens
-import { InstantAssistanceScreen } from '../screens/InstantAssistanceScreen';
-import { ConfirmationScreen } from '../screens/ConfirmationScreen';
-import { TrackingScreen } from '../screens/TrackingScreen';
-import { RequestDetailsScreen } from '../screens/RequestDetailsScreen';
-import { HospitalSelectionScreen } from '../screens/HospitalSelectionScreen';
-import { HospitalDetailsScreen } from '../screens/HospitalDetailsScreen';
-import { NotificationsScreen } from '../screens/NotificationsScreen';
-import { EmergencyContactsScreen } from '../screens/EmergencyContactsScreen';
 import { AddContactScreen } from '../screens/AddContactScreen';
+import { ConfirmationScreen } from '../screens/ConfirmationScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { EmergencyContactsScreen } from '../screens/EmergencyContactsScreen';
 import { EmergencySuccessScreen } from '../screens/EmergencySuccessScreen';
+import { HospitalDetailsScreen } from '../screens/HospitalDetailsScreen';
+import { HospitalSelectionScreen } from '../screens/HospitalSelectionScreen';
+import { InstantAssistanceScreen } from '../screens/InstantAssistanceScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { RequestDetailsScreen } from '../screens/RequestDetailsScreen';
 import { RequestHistoryScreen } from '../screens/RequestHistoryScreen';
 import { SOSScreen } from '../screens/SOSScreen';
+import { TrackingScreen } from '../screens/TrackingScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

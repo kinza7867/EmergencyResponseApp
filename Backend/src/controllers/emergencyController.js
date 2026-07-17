@@ -5,6 +5,7 @@
 
 const EmergencyRequest = require("../models/EmergencyRequest");
 const Hospital = require("../models/hospital");
+const EmergencyContact = require("../models/EmergencyContact");
 // Create Emergency Request
 const createEmergencyRequest = async (req, res) => {
 
@@ -222,6 +223,53 @@ const updateEmergencyStatus = async (req, res) => {
   }
 };
 
+  // ===============================
+// Notify Emergency Contacts
+// POST /api/emergency/:id/notify
+// ===============================
+
+const notifyEmergencyContacts = async (req, res) => {
+  try {
+    const emergency = await EmergencyRequest.findById(req.params.id);
+
+    if (!emergency) {
+      return res.status(404).json({
+        success: false,
+        message: "Emergency request not found.",
+      });
+    }
+
+    if (emergency.requestedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
+    const contacts = await EmergencyContact.find({
+      user: req.user._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${contacts.length} emergency contact(s) notified successfully.`,
+      data: {
+        emergencyId: emergency._id,
+        contacts,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+
 module.exports = {
   createEmergencyRequest,
   getMyEmergencyRequests,
@@ -229,4 +277,5 @@ module.exports = {
   updateEmergencyStatus,
   getEmergencyLocation,
   selectHospital,
+  notifyEmergencyContacts,
 };
