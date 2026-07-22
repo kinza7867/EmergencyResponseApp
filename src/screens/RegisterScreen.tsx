@@ -1,22 +1,22 @@
 // src/screens/RegisterScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-  ScrollView,
-  Animated,
-  Image,
-  Dimensions,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { authService } from '../services/authService';
 
 // Logo from root assets
@@ -144,8 +144,12 @@ export const RegisterScreen = ({ route, navigation }: any) => {
         setConfirmPassword('');
       }
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'Something went wrong. Please try again.');
-    } finally {
+  console.log("STATUS:", error.response?.status);
+  console.log("DATA:", error.response?.data);
+  console.log("MESSAGE:", error.message);
+
+  Alert.alert("Registration Failed", error.message);
+} finally {
       setLoading(false);
     }
   };

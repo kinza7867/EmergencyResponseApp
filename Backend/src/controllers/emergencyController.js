@@ -5,8 +5,10 @@
 
 const EmergencyRequest = require("../models/EmergencyRequest");
 const Hospital = require("../models/hospital");
+const { sendPushNotification } = require("../services/notificationService");
 const EmergencyContact = require("../models/EmergencyContact");
 // Create Emergency Request
+const User = require("../models/User");
 const createEmergencyRequest = async (req, res) => {
 
     console.log("===== CREATE EMERGENCY API =====");
@@ -129,25 +131,32 @@ const getEmergencyLocation = async (req, res) => {
 // Update Emergency Status
 // ===============================
 const updateEmergencyStatus = async (req, res) => {
-
   try {
-
     const { status } = req.body;
 
     const request = await EmergencyRequest.findById(req.params.id);
 
     if (!request) {
-
       return res.status(404).json({
         success: false,
         message: "Emergency request not found",
       });
-
     }
 
     request.status = status;
-
     await request.save();
+
+    // Find the user who created the emergency
+    const user = await User.findById(request.requestedBy);
+
+    // Send push notification if token exists
+    if (user && user.expoPushToken) {
+      await sendPushNotification(
+        user.expoPushToken,
+        "Emergency Status Updated",
+        `Your emergency status is now ${status}.`
+      );
+    }
 
     res.status(200).json({
       success: true,
@@ -156,14 +165,12 @@ const updateEmergencyStatus = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
   const selectHospital = async (req, res) => {

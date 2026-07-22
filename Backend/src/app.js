@@ -3,6 +3,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const emergencyRoutes = require("./routes/emergencyRoutes");
 const hospitalRoutes = require("./routes/hospitalRoutes");
 const emergencyContactRoutes = require("./routes/emergencyContactRoutes");
@@ -21,6 +22,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/emergency", emergencyRoutes);
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/emergency-contacts", emergencyContactRoutes);
+app.use("/api/notifications", notificationRoutes);
 // Test Route
 app.get("/", (req, res) => {
   res.json({
